@@ -20,6 +20,8 @@
 # production
 /build
 
+/skills
+
 # misc
 .DS_Store
 *.pem

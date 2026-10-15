@@ -1,29 +1,3 @@
-import { whyUsPoints } from "@/lib/content";
-
-export function WhyUs() {
-  return (
-    <section
-      aria-labelledby="whyus-heading"
-      className="border-b border-border bg-base-soft"
-    >
-      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 md:py-16 lg:py-24">
-        <h2 id="whyus-heading" className="text-h2 font-bold text-ink">
-          Kenapa Belanja di altomebay
-        </h2>
-        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {whyUsPoints.map((point) => (
-            <div
-              key={point.title}
-              className="rounded-2xl border border-border bg-base p-6 shadow-soft"
-            >
-              <h3 className="text-h3 font-bold text-ink">{point.title}</h3>
-              <p className="mt-2 text-caption text-ink-soft">
-                {point.description}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
+import {Check} from "lucide-react";
+import {whyUsPoints} from "@/lib/content";
+export function WhyUs(){return <section className="section why-section" aria-labelledby="why-heading"><div className="container why-layout"><div><p className="eyebrow">ALASAN UNTUK MAMPIR</p><h2 id="why-heading">Belanja sederhana.<br/><em>Rasanya berbeda.</em></h2><p className="why-intro">Hal-hal kecil yang membuat toko keluarga<br/>selalu punya tempat di hati.</p></div><div className="why-grid">{whyUsPoints.map(point=><article key={point.title}><span className="check-icon"><Check size={17}/></span><h3>{point.title}</h3><p>{point.description}</p></article>)}</div></div></section>;}

@@ -1,101 +1,36 @@
-// Semua nilai bertanda [GANTI] adalah placeholder — ganti sebelum publish.
+// Replace null values with verified store details before publishing.
 export const storeConfig = {
   name: "altomebay",
-  tagline: "Sembako lengkap, grosir & eceran — dekat dan ramah.",
-  whatsapp: {
-    number: "62812xxxxxxx", // [GANTI] nomor WhatsApp asli, format 62xxxxxxxxxx
-    defaultMessage: "Halo altomebay, saya mau tanya stok...",
-  },
-  address: {
-    full: "[GANTI: alamat lengkap toko]",
-    // [GANTI] ganti jadi "nama toko + kota" asli, dipakai untuk link & embed maps
-    mapsQuery: "altomebay toko sembako",
-    // [GANTI] opsional: isi dengan url Google Maps asli (share link) untuk override mapsQuery
-    mapsUrl: undefined as string | undefined,
-  },
-  hours: "Setiap hari 06.00–22.00", // [GANTI]
-  social: {
-    instagram: undefined as string | undefined, // [GANTI] opsional, mis. "https://instagram.com/altomebay"
-  },
+  tagline: "Kebutuhan harian, dekat di hati.",
+  whatsapp: { number: null as string | null, defaultMessage: "Halo Altomebay, saya mau tanya ketersediaan barang." },
+  address: { full: null as string | null, mapsUrl: null as string | null, mapsQuery: "" },
+  hours: null as string | null,
+  social: { instagram: null as string | null },
 };
-
-export type CategoryIcon =
-  | "sembako"
-  | "jajanan"
-  | "rokok"
-  | "pulsa"
-  | "ewallet"
-  | "air";
-
-export const categories: {
-  id: string;
-  label: string;
-  example: string;
-  icon: CategoryIcon;
-}[] = [
-  {
-    id: "sembako",
-    label: "Sembako",
-    example: "Beras, minyak, gula, telur, dll.",
-    icon: "sembako",
-  },
-  {
-    id: "jajanan",
-    label: "Jajanan & Snack",
-    example: "Camilan & minuman kemasan",
-    icon: "jajanan",
-  },
-  {
-    id: "rokok",
-    label: "Rokok",
-    example: "Berbagai merek, batangan & bungkus",
-    icon: "rokok",
-  },
-  {
-    id: "pulsa",
-    label: "Pulsa & Data",
-    example: "Semua operator, transaksi cepat",
-    icon: "pulsa",
-  },
-  {
-    id: "ewallet",
-    label: "DANA / E-Wallet",
-    example: "Top-up saldo & transfer",
-    icon: "ewallet",
-  },
-  {
-    id: "air",
-    label: "Depot Air Isi Ulang",
-    example: "Galon isi ulang, higienis",
-    icon: "air",
-  },
+export type CategoryIcon = "sembako" | "jajanan" | "rokok" | "pulsa" | "ewallet" | "air";
+export const categories: {id:string;label:string;example:string;icon:CategoryIcon;art:string;count:string}[] = [
+ {id:"sembako",label:"Sembako",example:"Beras, minyak, gula & telur",icon:"sembako",art:"pantry",count:"UNTUK DAPUR"},
+ {id:"jajanan",label:"Jajanan & minuman",example:"Camilan dan minuman favorit",icon:"jajanan",art:"snacks",count:"TEMAN SANTAI"},
+ {id:"rokok",label:"Rokok",example:"Pilihan merek di toko",icon:"rokok",art:"packs",count:"KEBUTUHAN LAIN"},
 ];
-
+export const services = [
+ {number:"01",title:"Pulsa & paket data",description:"Tetap terhubung. Tanyakan pilihan pulsa dan paket data untuk operatormu.",icon:"pulsa" as CategoryIcon},
+ {number:"02",title:"Top-up e-wallet",description:"Isi saldo dompet digital, termasuk DANA. Konfirmasi kebutuhanmu langsung ke toko.",icon:"ewallet" as CategoryIcon},
+ {number:"03",title:"Depot air isi ulang",description:"Kebutuhan air minum keluarga, lebih dekat dari rumah. Tanyakan layanan isi ulang galon.",icon:"air" as CategoryIcon},
+];
 export const whyUsPoints = [
-  {
-    title: "Grosir & Eceran",
-    description: "Beli satuan atau per pack, harga tetap bersahabat.",
-  },
-  {
-    title: "Lengkap",
-    description:
-      "Sembako, jajanan, pulsa, sampai isi ulang galon — satu tempat.",
-  },
-  {
-    title: "Dekat",
-    description: "Gampang dijangkau, hemat waktu ke toko.",
-  },
-  {
-    title: "Ramah & Keluarga",
-    description:
-      "Dilayani langsung oleh keluarga toko, bukan sekadar transaksi.",
-  },
+ {title:"Grosir & eceran",description:"Belanja satuan untuk hari ini, atau per pack untuk persediaan."},
+ {title:"Beragam kebutuhan",description:"Dari isi dapur sampai pulsa, temukan kebutuhanmu di satu tempat."},
+ {title:"Dekat dengan keseharian",description:"Toko untuk kebutuhan sehari-hari keluarga dan tetangga sekitar."},
+ {title:"Dilayani keluarga",description:"Ada sapaan dan perhatian di balik setiap belanjaan."},
 ];
-
-export const aboutStory = {
-  heading: "Toko keluarga, sejak awal",
-  paragraphs: [
-    'Nama "altomebay" berasal dari inisial keluarga: ALimah, sugianTO, MElia, dan BAyu — empat nama yang menjadi fondasi toko ini.',
-    "Berawal dari kebutuhan sehari-hari tetangga sekitar, altomebay tumbuh jadi tempat belanja sembako yang lengkap, dari grosir sampai eceran, dilayani langsung oleh keluarga.",
-  ],
+export const aboutStory = {heading:"Empat nama. Satu cerita keluarga.",paragraphs:[
+ "Altomebay berawal dari keluarga. ALimah, sugianTO, MElia, dan BAyu — empat nama yang kami satukan menjadi identitas toko.",
+ "Kami hadir untuk kebutuhan sehari-hari: dari belanja kecil untuk rumah, sampai persediaan grosir. Dengan pelayanan keluarga, kami ingin menjadi bagian yang dekat dari keseharianmu."
+]};
+export const assets = {
+ hero:{label:"Foto utama toko",size:"1600 × 1200 px",ratio:"4:3"},
+ about:{label:"Foto keluarga / suasana toko",size:"1200 × 900 px",ratio:"4:3"},
+ category:{label:"Foto kategori",size:"600 × 600 px",ratio:"1:1"},
+ promotion:{label:"Banner promo",size:"1600 × 640 px desktop · 900 × 900 px mobile",ratio:"5:2 / 1:1"},
 };

@@ -1,27 +1,4 @@
-import { PlaceholderImage } from "@/components/ui/PlaceholderImage";
-import { PhotoIcon } from "@/components/icons/PhotoIcon";
-import { aboutStory } from "@/lib/content";
-
-export function About() {
-  return (
-    <section aria-labelledby="about-heading" className="border-b border-border">
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-10 sm:px-6 md:py-16 lg:grid-cols-2 lg:items-center lg:py-24">
-        <PlaceholderImage
-          label="Foto keluarga & rak produk altomebay, segera hadir"
-          className="aspect-[4/3] w-full lg:order-2"
-          icon={<PhotoIcon className="h-full w-full" />}
-        />
-        <div>
-          <h2 id="about-heading" className="text-h2 font-bold text-ink">
-            {aboutStory.heading}
-          </h2>
-          {aboutStory.paragraphs.map((paragraph) => (
-            <p key={paragraph} className="mt-4 text-ink-soft">
-              {paragraph}
-            </p>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
+import {aboutStory,assets} from "@/lib/content";
+import {RetailArt} from "@/components/ui/RetailArt";
+import {AssetNote} from "@/components/ui/AssetNote";
+export function About(){return <section id="tentang" className="section about-section" aria-labelledby="about-heading"><div className="container about-grid"><div className="about-visual"><span className="visual-label">BERAWAL DARI KELUARGA</span><RetailArt/><div className="family-chips"><span>ALimah</span><span>sugianTO</span><span>MElia</span><span>BAyu</span></div><AssetNote label={assets.about.label} size={assets.about.size}/></div><div><p className="eyebrow">CERITA KAMI</p><h2 id="about-heading">Empat nama.<br/><em>Satu cerita keluarga.</em></h2>{aboutStory.paragraphs.map(text=><p className="about-copy" key={text}>{text}</p>)}<div className="family-signature">Salam hangat, <strong>keluarga Altomebay.</strong></div></div></div></section>;}

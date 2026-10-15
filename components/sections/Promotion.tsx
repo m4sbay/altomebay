@@ -1,0 +1,4 @@
+import {ArrowUpRight,Sparkles} from "lucide-react";
+import {AssetNote} from "@/components/ui/AssetNote";
+import {assets} from "@/lib/content";
+export function Promotion(){return <section className="promo-section" aria-labelledby="promo-heading"><div className="container"><div className="promo"><div><p className="eyebrow">KABAR DARI ALTOMEBAY</p><h2 id="promo-heading">Ruang untuk kabar baik<br/>dan penawaran menarik.</h2><p>Informasi promo toko akan hadir di sini.<br/>Sambil menunggu, kenali layanan kami.</p><a href="#layanan" className="action action-light">Lihat layanan toko <ArrowUpRight size={17}/></a></div><div className="promo-art" aria-hidden="true"><div className="promo-orbit"/><Sparkles className="promo-spark"/><div className="promo-ticket"><span>ALTOMEBAY</span><strong>Ada kabar<br/><em>baik.</em></strong><span>PROMO SEGERA HADIR</span></div></div><AssetNote label={assets.promotion.label} size={assets.promotion.size}/></div></div></section>;}

@@ -1,16 +1,18 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
+import { LenisProvider } from "@/components/providers/LenisProvider";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
   subsets: ["latin"],
-  weight: ["400", "500", "700"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "altomebay — Sembako lengkap, grosir & eceran",
+  title: "Altomebay — Kebutuhan harian, dekat di hati",
+  openGraph: { title: "Altomebay — Kebutuhan harian, dekat di hati", description: "Toko keluarga untuk belanja kebutuhan sehari-hari. Grosir & eceran, dekat dan ramah.", locale: "id_ID", type: "website" },
   description:
     "Toko sembako keluarga altomebay: sembako, jajanan, rokok, pulsa & data, DANA/e-wallet, dan depot air isi ulang. Grosir maupun eceran.",
 };
@@ -29,7 +31,7 @@ export default function RootLayout({
         >
           Lewati ke konten utama
         </a>
-        {children}
+        <LenisProvider>{children}</LenisProvider>
       </body>
     </html>
   );

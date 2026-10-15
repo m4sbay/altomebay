@@ -1,0 +1,4 @@
+import {ArrowUpRight} from "lucide-react";
+import {services} from "@/lib/content";
+import {CategoryIconGlyph} from "@/components/icons/CategoryIcons";
+export function Services(){return <section id="layanan" className="section services-section" aria-labelledby="services-heading"><div className="container"><div className="section-top"><div><p className="eyebrow">LEBIH DARI BELANJA</p><h2 id="services-heading">Urus kebutuhan lainnya,<br/>sekalian di sini.</h2></div><a href="#kontak" className="text-link">Tanyakan layanan <ArrowUpRight size={17}/></a></div><div className="service-grid">{services.map(s=><article className="service-card" key={s.number}><div className="service-card-top"><CategoryIconGlyph icon={s.icon} className="h-8 w-8"/><span>{s.number}</span></div><h3>{s.title}</h3><p>{s.description}</p></article>)}</div></div></section>;}

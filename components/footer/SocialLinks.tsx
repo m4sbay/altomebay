@@ -102,7 +102,7 @@ export function SocialLinks() {
             key={social.name}
             href={social.href}
             aria-label={social.name}
-            className="text-[#6B7280] hover:text-[#2E7D32] focus-visible:text-[#2E7D32] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2E7D32] transition-colors duration-300"
+            className="text-[#6B7280] hover:text-brand focus-visible:text-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand transition-colors duration-300"
             whileHover={{ scale: 1.1 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >

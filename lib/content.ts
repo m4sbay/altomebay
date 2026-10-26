@@ -1,12 +1,19 @@
-// Replace null values with verified store details before publishing.
+// Official store details; leave unconfirmed fields null.
 export const storeConfig = {
-  name: "altomebay",
+  name: "Ruko Altomebay Serasah",
   tagline: "Kebutuhan harian, dekat di hati.",
-  whatsapp: { number: null as string | null, defaultMessage: "Halo Altomebay, saya mau tanya ketersediaan barang." },
-  address: { full: null as string | null, mapsUrl: null as string | null, mapsQuery: "" },
+  whatsapp: { number: "6281273474170", displayNumber: "081273474170", defaultMessage: "Halo, saya mau tanya tentang produk yang tersedia di toko." },
+  address: { full: "8CH7+73M, Serasah, Kec. Pemayung, Kabupaten Batang Hari, Jambi 36657", mapsUrl: "https://www.google.com/maps/search/?api=1&query=8CH7%2B73M%2C%20Serasah%2C%20Pemayung%2C%20Batang%20Hari%2C%20Jambi" },
   hours: null as string | null,
   social: { instagram: null as string | null },
 };
+// Add verified opening hours in storeConfig.hours; the bar includes them automatically.
+export const announcementMessages = [
+  "Belanja dekat, kebutuhan lengkap",
+  "Grosir & eceran untuk kebutuhan sehari-hari",
+  "Belanja mudah, nggak perlu jauh-jauh",
+];
+
 export type CategoryIcon = "sembako" | "jajanan" | "rokok" | "pulsa" | "ewallet" | "air";
 export const categories: {id:string;label:string;example:string;icon:CategoryIcon;art:string;count:string}[] = [
  {id:"sembako",label:"Sembako",example:"Beras, minyak, gula & telur",icon:"sembako",art:"pantry",count:"UNTUK DAPUR"},

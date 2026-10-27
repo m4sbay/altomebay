@@ -1,1 +1,1 @@
-export function AssetNote({label,size}:{label:string;size:string}){return <span className="asset-note"><span className="asset-dot"/>Placeholder · {label} · {size}</span>;}
+export function AssetNote({label,size}:{label:string;size:string}){return <span className="asset-note flex items-center gap-1 text-center flex-wrap"><span className="asset-dot w-1 h-1 [border-radius:50%] [background:currentColor] shrink-0"/>Placeholder · {label} · {size}</span>;}

@@ -7,11 +7,11 @@ export function AnnouncementBar() {
     : announcementMessages;
 
   return (
-    <aside className="announcement" aria-label="Informasi toko">
-      <div className="announcement-viewport" tabIndex={0} role="region" aria-label="Pesan toko; saat animasi dikurangi, geser atau gunakan tombol panah untuk membaca">
-        <div className="announcement-track">
+    <aside className="announcement flex flex-row flex-nowrap items-center w-full [height:2.375rem] overflow-hidden bg-brand text-on-brand" aria-label="Informasi toko">
+      <div className="announcement-viewport [flex:1_1_0%] min-w-0 h-full" tabIndex={0} role="region" aria-label="Pesan toko; saat animasi dikurangi, geser atau gunakan tombol panah untuk membaca">
+        <div className="announcement-track flex flex-row flex-nowrap items-center w-max h-full gap-0">
           {[false, true].map((duplicate) => (
-            <ul className="announcement-group" key={String(duplicate)} aria-hidden={duplicate || undefined}>
+            <ul className="announcement-group flex-row flex-nowrap min-w-screen justify-around gap-0 p-0 list-none" key={String(duplicate)} aria-hidden={duplicate || undefined}>
               {messages.map((message) => <li key={message}>{message}</li>)}
             </ul>
           ))}

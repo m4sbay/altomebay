@@ -22,3 +22,13 @@ AnnouncementBar precedes navigation. Messages live in lib/content.ts; verified s
 
 ## Official contact integration
 All store identity/contact data lives in lib/content.ts (storeConfig). WhatsApp CTAs use buildWhatsAppLink and Maps CTAs use buildMapsSearchUrl from lib/links.ts. Navbar (including mobile), hero, service CTA, footer, and mobile contact bar use the same official number. Location keeps the lightweight illustrative map, clearly labeled as an illustration. Do not invent opening hours.
+
+## Design system refinement
+BoardUI informs hierarchy, whitespace and component proportions; measured reference values and adaptation decisions are in docs/design-system-audit.md. app/design-tokens.css registers Tailwind v4 composition tokens: existing 74rem container, section spacing 96/80/64px equivalent, 10px controls and 20px cards, shared gaps and control sizing based on the existing quarter-rem scale. Brand palette and fonts remain. Hero uses semantic fluid 40–80px display sizing at weight 700; other typography roles remain in typography.css. Intrinsic artwork geometry and existing reflow/reduced-motion behavior remain separate from UI layout tokens.
+
+Button correction: standard action/nav-contact uses 14/20px text at weight 500, 8px padding, 10px radius, minimum 36px height, intrinsic content width. Brand fonts retained. Sticky mobile actions keep 44px minimum. Borders use inset outlines to avoid adding height.
+
+Button structure refinement: outer 8px padding + .button-label horizontal 4px, icon 20px, flex gap 2px. Hero uses shared Button for primary and white bordered secondary with 8px CTA gap. Primary has brand-red gradient; secondary uses neutral ink/border. Shadow remains subtle; no hover lift.
+
+## Tailwind v4 migration
+Components now compose static layout/spacing/color utilities directly in className. Shared, descendant, state and responsive styling uses Tailwind @apply in the existing stylesheets, preserving prior cascade and exact visual values. Native CSS remains for tokens, keyframes, gradients, font variation, transforms and complex behavior. Hero CSS references globals via @reference; reset margins and intrinsic :where rules use @layer base. No dependency added. See docs/tailwind-migration.md for editing locations and validation. Production computed-style/geometry comparisons across 305 elements showed zero differences at 320, 390, 768 and 1440 CSS px. Lint, TypeScript, build, mobile menu/Escape, gallery focus ring and animation pause validated.

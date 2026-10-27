@@ -1,54 +1,153 @@
+@reference "../../app/globals.css";
+
 /* Hero styles are scoped so the rest of the storefront retains its type scale. */
+
 .hero.hero-centered {
-  position: relative;
-  isolation: isolate;
+  @apply relative isolate;
   background: linear-gradient(180deg, var(--color-brand-muted) 0%, var(--color-brand-soft) 48%, var(--color-base) 100%);
-  overflow: hidden;
+  @apply overflow-hidden;
   --hero-card-width: clamp(16rem, 26vw, 22.5rem);
-  --hero-gallery-gap: 1.25rem;
+  --hero-gallery-gap: var(--grid-gap);
 }
-.hero-intro { position: relative; z-index: 1; text-align: center; padding-top: clamp(3rem, 6vw, 6rem); }
-.hero-intro .eyebrow { justify-content: center; margin-bottom: 1.5rem; }
+
+.hero-intro .eyebrow {
+  @apply justify-center [margin-bottom:1.5rem];
+}
+
 .hero-centered h1, .hero-centered .hero-description {
   font-family: var(--font-hero), sans-serif;
   font-optical-sizing: auto;
-  font-style: normal;
+  @apply not-italic;
   font-variation-settings: "wdth" 100;
 }
-.hero-centered h1 { max-width: 15ch; margin-inline: auto; font-size: clamp(2.75rem, 6.8vw, 6.5rem); line-height: 1.04; letter-spacing: -.045em; font-weight: 800; text-wrap: balance; }
-.hero-centered h1 em { color: var(--color-brand); font-style: normal; }
-.hero-centered .hero-description { max-width: 39rem; margin: clamp(1.5rem, 3vw, 2rem) auto 0; font-size: clamp(1.125rem, 1.65vw, 1.5rem); line-height: 1.5; font-weight: 400; text-wrap: pretty; }
-.hero-centered .hero-actions { justify-content: center; margin-top: 1.75rem; gap: 1.5rem; }
-.hero-bricks { position: absolute; z-index: 0; pointer-events: none; width: 3.75rem; height: 3.75rem; background: var(--color-base); opacity: .48; }
-.hero-bricks-left { left: -1.875rem; top: 8rem; box-shadow: 3.75rem -3.75rem var(--color-base), 0 3.75rem var(--color-base), 3.75rem 7.5rem var(--color-base), 7.5rem 11.25rem var(--color-base), 0 11.25rem var(--color-base), 3.75rem 15rem var(--color-base); }
-.hero-bricks-right { right: -1.875rem; top: 4.25rem; box-shadow: -3.75rem 3.75rem var(--color-base), 0 7.5rem var(--color-base), -3.75rem 11.25rem var(--color-base), -7.5rem 15rem var(--color-base), 0 15rem var(--color-base), -3.75rem 18.75rem var(--color-base); }
-.hero-gallery { position: relative; z-index: 1; margin-top: clamp(2.5rem, 5vw, 4rem); overflow: hidden; padding-block: .5rem 1rem; }
-.hero-gallery:focus-visible { outline: 3px solid var(--color-brand); outline-offset: -3px; }
-.hero-gallery-track { display: flex; width: max-content; animation: hero-gallery-scroll 40s linear infinite; }
-/* Identical groups include their trailing gap: half the track is one full cycle. */
-.hero-gallery-group { display: flex; flex: 0 0 auto; gap: var(--hero-gallery-gap); margin: 0; padding: 0 var(--hero-gallery-gap) 0 0; list-style: none; }
-.hero-gallery-card { flex: 0 0 var(--hero-card-width); width: var(--hero-card-width); overflow: hidden; border-radius: 1.25rem; background: var(--color-base); border: 1px solid var(--color-brand-muted); }
-.hero-gallery-card img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
-.hero-gallery-caption { padding: 1rem 1.25rem; display: grid; gap: .25rem; font-size: 1rem; font-weight: 600; }
-.hero-placeholder-label { color: var(--color-ink-soft); font-size: .875rem; font-weight: 400; }
-.hero-gallery:hover .hero-gallery-track, .hero-gallery:focus-within .hero-gallery-track { animation-play-state: paused; }
-.hero-centered .hero-bottom { margin-top: 1rem; border-color: var(--color-brand-muted); gap: 1rem; }
-@keyframes hero-gallery-scroll { to { transform: translateX(-50%); } }
-@media (min-width: 1600px) { .hero-centered { --hero-card-width: 28vw; } }
-@media (max-width: 639px) {
-  .hero.hero-centered { --hero-card-width: 72vw; --hero-gallery-gap: .875rem; }
-  .hero-intro .eyebrow { font-size: .75rem; max-width: 26ch; margin-inline: auto; gap: .5rem; }
-  .hero-intro .eyebrow>span { flex-shrink: 0; }
-  .hero-centered h1 { font-size: clamp(2.5rem, 10.5vw, 4rem); }
-  .hero-centered .hero-description { margin-top: 1.5rem; }
-  .hero-centered .hero-actions { gap: .75rem 1.25rem; }
-  .hero-bricks { transform: scale(.5); opacity: .32; }
-  .hero-bricks-left { transform-origin: left top; top: 4rem; }
-  .hero-bricks-right { transform-origin: right top; top: 7rem; }
-  .hero-gallery-caption { padding: .875rem 1rem; }
+
+.hero-centered h1 {
+  @apply [max-width:15ch] mx-auto [font-size:var(--type-hero)] [line-height:var(--type-leading-display)] [letter-spacing:var(--type-tracking-display)] font-bold text-balance;
 }
+
+.hero-centered h1 em {
+  @apply text-brand not-italic;
+}
+
+.hero-centered .hero-description {
+  @apply [max-width:var(--measure-hero)] [margin:clamp(1.5rem,_3vw,_2rem)_auto_0] [font-size:var(--type-body-large)] [line-height:1.5] font-normal text-pretty;
+}
+
+.hero-centered .hero-actions {
+  @apply justify-center mt-8 gap-2;
+}
+
+.hero-bricks {
+  @apply [opacity:.48];
+}
+
+.hero-bricks-left {
+  @apply top-32;
+}
+
+.hero-bricks-right {
+  @apply [top:4.25rem];
+}
+
+.hero-gallery {
+  @apply overflow-hidden;
+}
+
+.hero-gallery:focus-visible {
+  outline: 3px solid var(--color-brand);
+  outline-offset: -3px;
+}
+
+.hero-gallery-track {
+  animation: hero-gallery-scroll 40s linear infinite;
+}
+
+/* Identical groups include their trailing gap: half the track is one full cycle. */
+
+.hero-gallery-group {
+  @apply flex;
+}
+
+.hero-gallery-card {
+  @apply [width:var(--hero-card-width)] rounded-card [border:1px_solid_var(--color-brand-muted)];
+}
+
+.hero-gallery-card img {
+  @apply w-full h-auto [aspect-ratio:4_/_3] object-cover block;
+}
+
+.hero-gallery-caption {
+  @apply [padding:1rem_1.25rem] [font-size:var(--type-body)] font-semibold;
+}
+
+.hero-placeholder-label {
+  @apply [font-size:var(--type-caption)] font-normal;
+}
+
+.hero-gallery:hover .hero-gallery-track, .hero-gallery:focus-within .hero-gallery-track {
+  @apply [animation-play-state:paused];
+}
+
+.hero-centered .hero-bottom {
+  @apply mt-4 [border-color:var(--color-brand-muted)] gap-4;
+}
+
+@keyframes hero-gallery-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (min-width: 1600px) {
+  .hero-centered {
+    --hero-card-width: 28vw;
+  }
+}
+
+@media (max-width: 639px) {
+  .hero.hero-centered {
+    --hero-card-width: 72vw;
+    --hero-gallery-gap: calc(var(--spacing) * 4);
+  }
+  .hero-intro .eyebrow {
+    @apply [font-size:var(--type-label)] [max-width:26ch] mx-auto [gap:.5rem];
+  }
+  .hero-intro .eyebrow>span {
+    @apply shrink-0;
+  }
+  .hero-centered h1 {
+    @apply [font-size:var(--type-hero)];
+  }
+  .hero-centered .hero-description {
+    @apply [margin-top:1.5rem];
+  }
+  .hero-centered .hero-actions {
+    @apply gap-2;
+  }
+  .hero-bricks {
+    transform: scale(.5);
+    @apply [opacity:.32];
+  }
+  .hero-bricks-left {
+    @apply [transform-origin:left_top] top-16;
+  }
+  .hero-bricks-right {
+    @apply [transform-origin:right_top] top-28;
+  }
+  .hero-gallery-caption {
+    @apply [padding:.875rem_1rem];
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .hero-gallery { overflow-x: auto; }
-  .hero-gallery-track { animation: none; transform: none; }
-  .hero-gallery-group[aria-hidden="true"] { display: none; }
+  .hero-gallery {
+    @apply overflow-x-auto;
+  }
+  .hero-gallery-track {
+    animation: none;
+    transform: none;
+  }
+  .hero-gallery-group[aria-hidden="true"] {
+    @apply hidden;
+  }
 }

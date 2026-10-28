@@ -1,0 +1,206 @@
+@reference "../globals.css";
+.admin-shell { @apply min-h-screen bg-base-soft; }
+.admin-header { @apply flex items-center gap-3 border-b border-border bg-base px-[var(--page-gutter)] py-5; }
+.admin-header > a:first-child,.admin-badge { @apply shrink-0 whitespace-nowrap; }
+.admin-header > a:last-child { @apply text-right; }
+.admin-badge { @apply rounded-control bg-brand-soft text-brand px-2 py-1 text-xs font-semibold; }
+.admin-main { @apply max-w-page mx-auto px-[var(--page-gutter)] py-10 md:py-14; }
+.admin-heading { @apply flex items-start justify-between gap-5; }
+.admin-heading > div { @apply min-w-0; }
+.admin-heading > form { @apply shrink-0; }
+.admin-datebar { @apply flex flex-wrap items-center justify-between gap-5 mt-9; }
+.admin-summary { @apply grid gap-5 md:grid-cols-3; }
+.admin-panel { @apply rounded-card border border-border bg-base p-[var(--card-padding)] shadow-soft; }
+.admin-amount { @apply font-bold tracking-tight tabular-nums my-4 break-words; font-size:clamp(1.25rem,2.4vw,2rem); }
+.admin-balance { @apply bg-brand-soft border-brand-muted; }
+.admin-balance .admin-amount { @apply text-brand; }
+.admin-history { @apply mt-9; }
+.admin-history-heading { @apply flex flex-wrap items-center justify-between gap-5 mb-6; }
+.admin-table-head { @apply hidden md:grid gap-5 text-xs font-semibold text-ink-soft py-4 border-y border-border; grid-template-columns:minmax(0,1fr) 9rem minmax(9rem,auto) 6rem; }
+.admin-transactions { @apply list-none m-0 p-0; }
+.admin-row { @apply grid gap-3 py-5 border-b border-border last:border-0 md:items-center md:gap-5; grid-template-columns:minmax(0,1fr) auto; }
+.admin-row > :first-child { @apply col-span-2 md:col-span-1; }
+.admin-row > p { @apply col-start-1 md:col-start-auto; }
+.admin-row-actions { @apply flex justify-end gap-1 col-start-2 row-start-2 row-span-2 md:col-start-auto md:row-start-auto md:row-span-1; }
+.admin-row-actions button,.admin-close { @apply flex items-center justify-center min-h-touch min-w-touch rounded-control hover:bg-base-soft; }
+.admin-type { @apply text-xs font-medium rounded-pill bg-base-soft border border-border py-1 px-2 w-fit; }
+.admin-expense { @apply bg-brand-soft text-brand border-brand-muted; }
+.admin-empty { @apply flex flex-col items-center justify-center gap-4 py-16 text-center; }
+.admin-login { @apply max-w-lg mx-auto mt-10; }
+.admin-notice { @apply rounded-control bg-brand-soft text-brand p-4 text-sm; }
+.admin-dialog { @apply fixed m-auto border border-border rounded-card p-[var(--card-padding)] bg-base text-ink shadow-soft-hover; width:min(32rem,calc(100% - 2rem)); max-height:calc(100dvh - 2rem); overflow-y:auto; }
+.admin-dialog::backdrop { background:color-mix(in srgb,var(--color-ink) 45%,transparent); }
+.admin-form { @apply grid gap-5 mt-6; }
+.admin-shell label,.admin-dialog label { @apply text-sm font-semibold; }
+.admin-shell input:not([type=radio]):not([type=hidden]),.admin-dialog input:not([type=radio]):not([type=hidden]),.admin-dialog select { @apply block w-full rounded-control border border-border bg-base text-ink px-3 py-3 mt-2 min-h-touch min-w-0 font-normal; }
+.admin-form label { @apply block; }
+.admin-form-actions { @apply flex flex-wrap justify-end gap-3 mt-6; }
+.admin-segment { @apply grid grid-cols-2 gap-2; }
+.admin-segment label { @apply relative; }
+.admin-segment input { @apply sr-only; }
+.admin-segment span { @apply block rounded-control border border-border px-2 py-3 text-center min-h-touch; }
+.admin-segment input:checked + span { @apply border-brand bg-brand-soft text-brand; }
+.admin-segment input:focus-visible + span { outline:1px solid var(--color-brand); outline-offset:2px; }
+@media(min-width:768px) { .admin-row {grid-template-columns:minmax(0,1fr) 9rem minmax(9rem,auto) 6rem;} }
+
+/* The old focus added a 2px outline outside the 1px input border; buttons
+   also inherited a separate 3px global outline. Controls now use one border
+   plus a quiet surface change for keyboard focus, scoped to admin only. */
+.admin-shell input:not([type=radio]):not([type=hidden]),
+.admin-dialog input:not([type=radio]):not([type=hidden]),
+.admin-dialog select,
+.admin-dialog textarea,
+.admin-date-trigger {
+  transition: border-color var(--duration-ui), background-color var(--duration-ui);
+}
+.admin-shell input:not([type=radio]):focus,
+.admin-dialog input:not([type=radio]):focus,
+.admin-dialog select:focus,
+.admin-dialog textarea:focus,
+.admin-date-trigger:focus {
+  border-color: var(--color-brand);
+  outline: none;
+}
+.admin-shell input:not([type=radio]):focus-visible,
+.admin-dialog input:not([type=radio]):focus-visible,
+.admin-dialog select:focus-visible,
+.admin-dialog textarea:focus-visible,
+.admin-date-trigger:focus-visible {
+  background-color: var(--color-brand-soft);
+}
+.admin-date-picker { @apply min-w-0; }
+.admin-date-picker > label { @apply block text-sm font-semibold text-ink-soft; }
+.admin-date-trigger {
+  @apply flex items-center gap-2 w-full min-h-touch rounded-control border border-border bg-base text-ink text-sm px-3 py-3 mt-2 text-left;
+}
+.admin-date-trigger > span { @apply min-w-0; overflow-wrap:anywhere; }
+.admin-date-trigger > svg { @apply shrink-0 text-ink-soft; }
+.admin-date-trigger:hover:not(:disabled):not(:focus) { border-color:var(--color-brand-muted); }
+.admin-date-trigger:disabled { @apply opacity-60; }
+.admin-date-trigger[data-state=open] { border-color:var(--color-brand); }
+.admin-datebar .admin-date-picker { @apply w-full sm:w-auto; }
+.admin-dialog .admin-date-picker > label { @apply text-ink; }
+.admin-calendar-popover {
+  @apply z-50 rounded-card border border-border bg-base text-ink p-3 shadow-soft-hover;
+  width:min(22rem,calc(100vw - 2.5rem));
+  max-height:var(--radix-popover-content-available-height);
+  overflow-y:auto;
+  outline:none;
+}
+.admin-calendar { @apply relative text-sm; }
+.admin-calendar .rdp-month { @apply relative; }
+.admin-calendar .rdp-month_caption { @apply flex items-center justify-center min-h-touch px-12 mb-2; }
+.admin-calendar .rdp-caption_label { @apply text-sm font-semibold; }
+.admin-calendar .rdp-button_previous,
+.admin-calendar .rdp-button_next {
+  @apply absolute top-0 flex items-center justify-center min-h-touch w-touch border border-transparent rounded-control;
+}
+.admin-calendar .rdp-button_previous { @apply left-0; }
+.admin-calendar .rdp-button_next { @apply right-0; }
+.admin-calendar .rdp-chevron { @apply w-4 h-4 fill-current; }
+.admin-calendar .rdp-month_grid { @apply w-full border-collapse; table-layout:fixed; }
+.admin-calendar .rdp-weekday { @apply text-xs text-ink-soft font-medium pb-2; }
+.admin-calendar .rdp-day { @apply p-0 text-center; }
+.admin-calendar .rdp-day_button {
+  @apply w-full min-h-touch border border-transparent rounded-control text-sm font-medium;
+  transition:background-color var(--duration-ui),border-color var(--duration-ui);
+}
+.admin-calendar button:hover:not(:disabled):not([aria-disabled=true]) { @apply bg-base-soft; }
+.admin-calendar .rdp-today:not(.rdp-selected) .rdp-day_button { @apply text-brand underline underline-offset-4; }
+.admin-calendar .rdp-outside:not(.rdp-selected) { @apply text-ink-soft; }
+.admin-calendar .rdp-selected .rdp-day_button,
+.admin-calendar .rdp-selected .rdp-day_button:hover { @apply bg-brand text-on-brand; }
+.admin-calendar button:disabled,
+.admin-calendar button[aria-disabled=true] { @apply opacity-40 cursor-not-allowed; }
+.admin-calendar button:focus-visible {
+  border-color:var(--color-brand);
+  outline:none;
+  text-decoration:underline;
+  text-underline-offset:.25rem;
+  background-color:var(--color-brand-soft);
+}
+.admin-calendar .rdp-selected .rdp-day_button:focus-visible { @apply border-ink bg-brand text-on-brand; }
+.admin-calendar-note { @apply text-xs text-ink-soft text-center mt-3 pt-3 border-t border-border; }
+@media(prefers-reduced-motion:reduce) {
+  .admin-shell input,.admin-dialog input,.admin-dialog select,.admin-dialog textarea,
+  .admin-date-trigger,.admin-calendar .rdp-day_button { transition:none; }
+}
+
+/* Financial overview v2 — all overrides remain scoped to admin. */
+.admin-shell .action,.admin-dialog .action { min-height:2.75rem; background-image:none; }
+.admin-shell button:focus-visible,.admin-dialog button:focus-visible,.admin-action-menu button:focus-visible { outline:1px solid var(--color-brand); outline-offset:2px; }
+.admin-header-nav { @apply ml-auto flex items-center gap-6 text-sm font-medium; }
+.admin-header-nav > a { @apply text-brand; }
+.admin-heading { @apply flex-wrap; }
+.admin-heading-actions,.admin-quick-actions { @apply flex flex-wrap gap-2; }
+.admin-period { @apply flex flex-wrap justify-between items-center gap-4 mt-8; }
+.admin-period .admin-date-trigger { @apply w-auto mt-0; }
+.admin-presets { @apply flex flex-wrap gap-1 rounded-control border border-border p-1 bg-base; }
+.admin-presets button { @apply px-3 py-2 text-sm rounded-control min-h-touch; }
+.admin-presets button[aria-pressed=true] { @apply bg-brand-soft text-brand font-semibold; }
+.admin-calendar .rdp-range_middle .rdp-day_button { @apply bg-brand-soft text-brand rounded-none; }
+.admin-chart { @apply mt-7; position:relative; }
+.admin-legend { @apply flex flex-wrap gap-4 text-xs; }
+.admin-legend span { @apply flex items-center gap-2; }
+.admin-legend i { @apply block w-3 h-3 rounded-sm bg-ink; }
+.admin-legend span:last-child i { @apply bg-brand; }
+.admin-chart-value { @apply flex flex-wrap justify-between gap-2 text-xs text-ink-soft mb-5; min-height:2.5rem; }
+.admin-chart-scale { @apply text-xs text-ink-soft flex flex-col justify-between; position:absolute; height:12rem; width:5.5rem; }
+.admin-bars { @apply border-b border-border; display:grid; gap:clamp(1px,.6vw,8px); height:12rem; margin-left:5.75rem; background:repeating-linear-gradient(to top,transparent,transparent calc(25% - 1px),var(--color-border) 25%); }
+.admin-bar-group { @apply flex items-end justify-center relative; height:100%; gap:2px; min-width:0; }
+.admin-bar-group > span:not(.admin-chart-tooltip) { @apply bg-ink rounded-t-sm; width:40%; max-width:2rem; }
+.admin-bar-group > span:nth-child(2) { @apply bg-brand; }
+.admin-chart-tooltip { @apply hidden; }
+.admin-chart-axis { @apply flex justify-between gap-3 text-xs text-ink-soft mt-3; margin-left:5.75rem; }
+.admin-quick { @apply mt-7 flex flex-wrap justify-between items-center gap-5; }
+.admin-history { @apply mt-7; }
+.admin-type-filter { @apply flex items-center flex-wrap gap-3; }
+.admin-shell select { @apply rounded-control border border-border bg-base px-3 py-2 min-h-touch text-sm; }
+.admin-shell select:focus-visible { outline:1px solid var(--color-brand); outline-offset:2px; }
+.admin-table { @apply w-full text-sm border-collapse; table-layout:fixed; }
+.admin-table th { @apply text-left text-xs text-ink-soft font-medium border-y border-border bg-base-soft px-3 py-4; }
+.admin-table td { @apply px-3 py-4 border-b border-border; overflow-wrap:anywhere; }
+.admin-table th:nth-child(1) { width:15%; }
+.admin-table th:nth-child(2) { width:25%; }
+.admin-table th:nth-child(3) { width:17%; }
+.admin-table th:nth-child(4) { width:15%; }
+.admin-table th:nth-child(5) { width:21%; text-align:right; }
+.admin-table th:nth-child(6) { width:7%; }
+.admin-table .admin-type { white-space:nowrap; }
+.admin-table-amount { @apply text-right font-semibold tabular-nums; }
+.admin-row-menu { @apply flex items-center justify-center min-h-touch min-w-touch rounded-control hover:bg-base-soft; }
+.admin-action-menu { @apply z-50 bg-base text-ink rounded-control border border-border p-1 shadow-soft-hover; }
+.admin-action-menu button { @apply block w-full px-4 py-3 text-left text-sm rounded-control hover:bg-base-soft; }
+.admin-action-menu button:last-child { @apply text-brand; }
+.admin-mobile-list { @apply hidden list-none p-0 m-0; }
+.admin-mobile-list li { @apply py-4 border-b border-border; overflow-wrap:anywhere; }
+.admin-pagination { @apply flex items-center justify-between gap-2 mt-5 text-sm; }
+.admin-dialog textarea { @apply block w-full rounded-control border border-border bg-base text-ink px-3 py-3 mt-2 min-h-touch min-w-0 font-normal; resize:vertical; }
+.admin-form details summary { @apply text-sm text-ink-soft cursor-pointer min-h-touch flex items-center; }
+@media(max-width:1023px) { .admin-table {display:none;} .admin-mobile-list {display:block;} }
+@media(max-width:639px) {
+ .admin-header {gap:.5rem;}
+ .admin-header-nav {gap:.5rem;}
+ .admin-header-nav > a {display:none;}
+ .admin-heading-actions {display:none;}
+ .admin-period,.admin-period .admin-date-trigger {width:100%;}
+ .admin-presets {width:100%;}
+ .admin-presets button {flex:1;padding-inline:.25rem;font-size:.75rem;}
+ .admin-quick-actions {width:100%;}
+ .admin-quick-actions .action {width:100%;}
+ .admin-chart-scale {width:4rem;font-size:.625rem;}
+ .admin-bars,.admin-chart-axis {margin-left:4.25rem;}
+ .admin-chart-axis {font-size:.625rem;}
+ .admin-chart-value {min-height:3rem;}
+ .admin-pagination .action {font-size:.75rem;}
+}
+@media(min-width:640px) {
+ .admin-bar-group:hover .admin-chart-tooltip,.admin-bar-group:focus-visible .admin-chart-tooltip { display:block; position:absolute; z-index:10; bottom:100%; left:50%; transform:translateX(-50%); width:max-content; max-width:15rem; padding:.5rem .75rem; border:1px solid var(--color-border); border-radius:var(--radius-control); background:var(--color-base); color:var(--color-ink); font-size:.75rem; text-align:left; pointer-events:none; box-shadow:var(--shadow-soft); }
+ .admin-bar-group:first-child .admin-chart-tooltip {left:0;transform:none;}
+ .admin-bar-group:nth-last-child(-n+3) .admin-chart-tooltip {left:auto;right:0;transform:none;}
+}
+.admin-heading h1 { font-size:clamp(1.875rem,3vw,2.25rem); line-height:1.2; font-weight:700; }
+.admin-panel h2,.admin-dialog h2 { font-size:1.25rem; line-height:1.4; font-weight:600; }
+.admin-summary h2 { font-size:.875rem; font-weight:500; letter-spacing:0; }
+.admin-quick h2 { font-size:1rem; }
+.admin-empty h3 { font-size:1.125rem; }

@@ -3,9 +3,9 @@ Official website for a family retail shop, named after Alimah, Sugianto, Melia, 
 ## Current milestone
 Phase 1 UI foundation and Phase 2 homepage. Indonesian, responsive, white/red, Plus Jakarta Sans. Retail hierarchy inspired by Alfagift with an independent identity.
 ## Stack
-Next.js 16 App Router, React 19, TypeScript, Tailwind 4. Existing GSAP, Framer Motion, Lenis retained. Static export; Vercel hosting and Domainesia domain planned.
+Next.js 16 App Router, React 19, TypeScript, Tailwind 4. Existing GSAP, Framer Motion, Lenis retained. Public homepage is statically prerendered; admin requires a Node.js server and persistent SQLite disk. Vercel hosting requires a managed database; Domainesia domain planned.
 ## Scope
-Header, mobile navigation, hero, shopping categories, promotional placeholder, services, benefits, family story, location/hours, footer, mobile contact bar. No auth/backend/cart/checkout. Future customer accounts: profile, registration, login; admin/POS separate milestones.
+Header, mobile navigation, hero, shopping categories, promotional placeholder, services, benefits, family story, location/hours, footer, mobile contact bar. Admin authentication and cashflow backend now exist at /admin; no public customer auth/cart/checkout. Future customer accounts: profile, registration, login; POS remains a separate milestone.
 ## Content
 Central configuration in lib/content.ts; navigation in lib/navigation.ts. Official store name, address, WhatsApp, and Google Maps URL are configured; opening hours and social profiles remain unconfirmed. Never link to dummy phone numbers or maps. Asset requirements in public/assets/README.md. Illustrations are clearly labeled placeholders.
 ## Validation
@@ -32,3 +32,10 @@ Button structure refinement: outer 8px padding + .button-label horizontal 4px, i
 
 ## Tailwind v4 migration
 Components now compose static layout/spacing/color utilities directly in className. Shared, descendant, state and responsive styling uses Tailwind @apply in the existing stylesheets, preserving prior cascade and exact visual values. Native CSS remains for tokens, keyframes, gradients, font variation, transforms and complex behavior. Hero CSS references globals via @reference; reset margins and intrinsic :where rules use @layer base. No dependency added. See docs/tailwind-migration.md for editing locations and validation. Production computed-style/geometry comparisons across 305 elements showed zero differences at 320, 390, 768 and 1440 CSS px. Lint, TypeScript, build, mobile menu/Escape, gallery focus ring and animation pause validated.
+
+## Daily cashflow admin
+`/admin` adds server-side password authentication, eight-hour sessions, SQLite persistence, and daily transaction CRUD. Static export has been removed; Node.js 22.13+ and persistent disk are now required. Public design is unchanged. See docs/admin-cashflow.md for environment setup, hosting constraints (managed SQL required before Vercel), files, verification and MVP limits.
+
+Admin refinement v1.1: shared Indonesian React DayPicker + Radix Popover calendar uses Jakarta TZDate conversions and Monday-first weeks. Expense description is mandatory on create/update; legacy empty descriptions remain readable. Calendar/focus styles are admin-scoped. Restart the dev server after changing export configuration/environment: an old running static-export server caused `/admin` HTTP 500; restart restored HTTP 200. `ADMIN_PASSWORD_HASH` is still required to enable sign-in.
+
+Admin v2.0: `/admin` now uses a Jakarta month-to-date Financial Overview with URL date ranges, server-consistent KPI/trend totals, separate manual-income and detailed-expense workflows, responsive transaction history and real pagination. Existing Radix/DayPicker/Button primitives are reused with no new dependencies. Additive SQLite triggers prevent new duplicate daily sales while preserving historical duplicates; rollback/audit guidance is in `docs/admin-cashflow.md`. Public page sources, global tokens and authentication remain unchanged.

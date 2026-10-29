@@ -40,7 +40,7 @@ export function DatePicker({ label, value, max, onChange, name, disabled }: Prop
             id={valueId}
             ref={trigger}
             type="button"
-            className="admin-date-trigger"
+            className="app-control admin-date-trigger"
             disabled={disabled}
             aria-labelledby={`${labelId} ${valueId}-text`}
           >
@@ -51,7 +51,7 @@ export function DatePicker({ label, value, max, onChange, name, disabled }: Prop
         </Popover.Trigger>
         <Popover.Portal container={portalContainer}>
           <Popover.Content
-            className="admin-calendar-popover"
+            className="app-popup admin-calendar-popover"
             aria-label={`Kalender ${label.toLowerCase()}`}
             align="end"
             sideOffset={8}

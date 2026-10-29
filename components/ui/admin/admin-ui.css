@@ -1,0 +1,43 @@
+@reference "../../../app/globals.css";
+/* Admin-only canonical controls. All values come from existing Altomebay tokens. */
+.app-control {
+ @apply block w-full min-w-0 mt-2 rounded-control border border-border bg-base text-ink text-sm font-normal px-3 py-2;
+ min-height:var(--touch-target);
+ transition:border-color var(--duration-ui),background-color var(--duration-ui);
+}
+.app-control::placeholder,.app-select[data-placeholder] { @apply text-ink-soft; }
+.app-control:hover:not(:disabled):not(:focus) { border-color:var(--color-brand-muted); }
+.app-control:focus,.app-control[data-state=open] { border-color:var(--color-brand); }
+.admin-shell .app-control:focus,.admin-dialog .app-control:focus,.app-popup .app-control:focus { outline:none; }
+.admin-shell .app-control:focus-visible,.admin-dialog .app-control:focus-visible,.app-popup .app-control:focus-visible { outline:none; background-color:var(--color-brand-soft); border-color:var(--color-brand); }
+.app-control:disabled { @apply opacity-60 cursor-not-allowed; }
+.app-control[aria-invalid=true] { border-color:var(--color-brand); background-color:var(--color-brand-soft); }
+.app-textarea { resize:vertical; }
+.app-select { @apply flex items-center justify-between gap-3 text-left; }
+.app-select > span:first-child { @apply min-w-0; overflow-wrap:anywhere; }
+.app-select > svg,.app-select > span:last-child { @apply shrink-0; }
+.app-icon-button { @apply inline-flex shrink-0 items-center justify-center rounded-control border border-transparent text-ink-soft hover:bg-base-soft disabled:opacity-40; min-width:var(--touch-target); min-height:var(--touch-target); }
+.app-icon-button:focus-visible { outline:1px solid var(--color-brand); outline-offset:2px; }
+.app-popup { @apply z-50 rounded-control border border-border bg-base text-ink p-1 shadow-soft-hover text-sm font-normal; max-width:calc(100vw - var(--spacing) * 6); outline:none; }
+.app-select-popup { width:var(--radix-select-trigger-width); max-height:min(20rem,var(--radix-select-content-available-height)); overflow-y:auto; }
+.app-combobox-popup { width:var(--radix-popover-trigger-width); max-height:min(24rem,var(--radix-popover-content-available-height)); overflow-y:auto; }
+.app-combobox-search { @apply flex items-center gap-2 border-b border-border px-2 pb-2; }
+.app-combobox-search .app-control { @apply mt-0; }
+.app-combobox-options { max-height:16rem; overflow-y:auto; }
+.app-option { @apply relative flex items-center gap-3 w-full px-3 py-2 rounded-control text-left cursor-pointer; min-height:var(--touch-target); outline:none; overflow-wrap:anywhere; }
+.app-option[data-highlighted],.app-option:hover:not([data-disabled]) { @apply bg-brand-soft text-brand; }
+.app-option[data-disabled] { @apply opacity-40 cursor-not-allowed; }
+.app-option-check { @apply ml-auto flex shrink-0; }
+.app-option > span:first-child { @apply min-w-0 flex-1; }
+.app-option:focus-visible { outline:1px solid var(--color-brand); outline-offset:-1px; }
+.app-destructive { @apply text-brand; }
+.app-menu-popup { min-width:11rem; max-height:var(--radix-dropdown-menu-content-available-height); overflow-y:auto; }
+.app-menu-separator { @apply border-t border-border my-1; }
+.app-empty-options { @apply p-3 text-sm text-ink-soft; }
+.admin-type-filter .app-control { @apply mt-0 w-auto; min-width:10rem; }
+.admin-shell [role=alert],.admin-dialog [role=alert] { @apply text-sm text-brand; }
+.admin-shell .action-destructive,.admin-dialog .action-destructive { @apply bg-brand text-on-brand; }
+.admin-shell .action-destructive:hover:not(:disabled),.admin-dialog .action-destructive:hover:not(:disabled) { @apply bg-brand-hover; }
+@media(prefers-reduced-motion:reduce) { .app-control { transition:none; } }
+.app-control.admin-date-trigger { @apply flex; }
+.app-popup.admin-calendar-popover { @apply p-3; }

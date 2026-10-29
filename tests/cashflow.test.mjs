@@ -61,6 +61,10 @@ test('server authentication, CRUD, date filtering, persistence and revocation',a
  await assert.rejects(actions.dailySales(input.transactionDate));
  await assert.rejects(actions.saveTransaction(input));
  await assert.rejects(actions.deleteTransaction('unknown'));
+ await assert.rejects(actions.listExpenseTypes());
+ await assert.rejects(actions.createExpenseType('Pupuk','stock_purchase'));
+ await assert.rejects(actions.saveExpenseBatch({}));
+ await assert.rejects(actions.saveExpenseItem('missing','aice',1));
  assert.equal(await auth.authenticated(),false);
  const salt=randomBytes(16).toString('hex');
  process.env.ADMIN_PASSWORD_HASH=`${salt}:${scryptSync('test-long-password',salt,64).toString('hex')}`;
@@ -118,6 +122,61 @@ test('server authentication, CRUD, date filtering, persistence and revocation',a
  assert.equal(check.prepare('SELECT description FROM transactions WHERE id=?').get('legacy-expense').description,'Beli lakban');check.close();
  await actions.deleteTransaction(legacy.id);
  assert.equal((await actions.listTransactions(input.transactionDate)).length,1);
+ // Reusable types, atomic batches, idempotency, linked CRUD and aggregate accuracy.
+ const types=await actions.listExpenseTypes();assert.equal(types.length,5);
+ for(const name of ['', '   ', 'x'.repeat(61)])assert.ok((await actions.createExpenseType(name,'stock_purchase')).error);
+ assert.ok((await actions.createExpenseType('Pupuk','sales')).error);
+ const custom=await actions.createExpenseType('  Belanja Pupuk  ','stock_purchase');
+ assert.equal(custom.type.name,'Belanja Pupuk');
+ const duplicate=await actions.createExpenseType('belanja pupuk','operational');
+ assert.equal(duplicate.type.id,custom.type.id);assert.equal(duplicate.type.category,'stock_purchase');
+ assert.equal((await actions.listExpenseTypes()).length,6);
+ const batch={id:'test-batch-request-001',transactionDate:input.transactionDate,note:'  Beberapa distributor  ',items:[{typeId:'cigarettes',amount:450000},{typeId:'aice',amount:280000},{typeId:'snacks',amount:175000}]};
+ const before=(await actions.financialOverview(input.transactionDate,input.transactionDate)).totals.expense;
+ assert.equal((await actions.saveTransaction({...input,category:'other_income',transactionDate:'2025-03-02',amount:777})).error,null);
+ for(const amount of [0,-1,1.5,1e12+1])assert.ok((await actions.saveExpenseBatch({...batch,items:[{typeId:'aice',amount}]})).error);
+ assert.ok((await actions.saveExpenseBatch({...batch,items:[]})).error);
+ assert.ok((await actions.saveExpenseBatch({...batch,items:[{typeId:'',amount:1}]})).error);
+ assert.ok((await actions.saveExpenseBatch({...batch,transactionDate:'2099-01-01'})).error);
+ const failing={...batch,id:'test-batch-rollback-001',items:[batch.items[0],{typeId:'missing',amount:100}]};
+ assert.ok((await actions.saveExpenseBatch(failing)).error);
+ assert.equal(database.prepare('SELECT id FROM expense_batches WHERE id=?').get(failing.id),undefined);
+ assert.equal((await actions.financialOverview(input.transactionDate,input.transactionDate)).totals.expense,before);
+ assert.equal((await actions.saveExpenseBatch(batch)).error,null);
+ assert.equal((await actions.saveExpenseBatch(batch)).error,null,'retry must not create duplicate entries');
+ assert.ok((await actions.saveExpenseBatch({...batch,note:'Changed'})).error);
+ let groupedOverview=await actions.financialOverview(input.transactionDate,input.transactionDate);
+ let batchRows=groupedOverview.rows.filter(row=>row.batchId===batch.id);
+ assert.equal(batchRows.length,3);assert.equal(cash.summarize(batchRows).expense,905000);
+ assert.equal(groupedOverview.totals.expense,before+905000);
+ assert.ok(groupedOverview.rows.every(row=>row.transactionDate===input.transactionDate),'single-day overview excludes other dates');
+ assert.equal(groupedOverview.trend.points.length,1);
+ assert.equal(groupedOverview.trend.points[0].date,input.transactionDate);
+ assert.equal(groupedOverview.trend.points.reduce((sum,p)=>sum+p.expense,0),before+905000);
+ assert.equal(batchRows[0].batchNote,'Beberapa distributor');
+ assert.ok(batchRows.every(row=>row.expenseTypeId&&row.description===null));
+ const expenses=load('lib/expenses.ts');
+ assert.equal(expenses.groupHistory(batchRows).length,1);
+ assert.equal(expenses.groupHistory(batchRows).at(0).amount,905000);
+ assert.equal(expenses.groupHistory([{...batchRows[0],batchId:null},{...batchRows[1],batchId:null}]).length,2);
+ assert.equal((await actions.saveExpenseItem(batchRows[0].id,custom.type.id,100000)).error,null);
+ assert.ok((await actions.saveExpenseItem(batchRows[0].id,'missing',1)).error);
+ const updated=(await actions.listTransactions(input.transactionDate)).find(row=>row.id===batchRows[0].id);
+ assert.equal(updated.amount,100000);assert.equal(updated.expenseTypeName,'Belanja Pupuk');assert.equal(updated.batchId,batch.id);
+ assert.ok((await actions.saveTransaction({...updated,description:'Overwrite'},updated.id)).error);
+ const verify=new DatabaseSync(process.env.ADMIN_DATABASE_PATH);
+ assert.equal(verify.prepare('SELECT COUNT(*) AS n FROM expense_types').get().n,6);verify.close();
+ await actions.deleteTransaction(batchRows[1].id);
+ batchRows=(await actions.listTransactions(input.transactionDate)).filter(row=>row.batchId===batch.id);
+ assert.equal(batchRows.length,2);
+ assert.equal(database.prepare('SELECT transactionId FROM expense_items WHERE transactionId=?').get(updated.id).transactionId,updated.id);
+ for(const row of batchRows)await actions.deleteTransaction(row.id);
+ assert.equal((await actions.saveExpenseBatch(batch)).error,null,'deleted submission retains retry tombstone');
+ assert.equal((await actions.listTransactions(input.transactionDate)).filter(row=>row.batchId===batch.id).length,0);
+ const single={...batch,id:'test-single-batch-001',note:'',items:[{typeId:'aice',amount:123}]};
+ assert.equal((await actions.saveExpenseBatch(single)).error,null);
+ const singleRow=(await actions.listTransactions(input.transactionDate)).find(row=>row.batchId===single.id);
+ assert.equal(expenses.groupHistory([singleRow]).length,1);await actions.deleteTransaction(singleRow.id);
  await auth.signOut();await assert.rejects(actions.listTransactions(input.transactionDate));
  for(let i=0;i<5;i++)await auth.signIn('incorrect');
  assert.match(await auth.signIn('test-long-password'),/15 menit/);
@@ -136,4 +195,29 @@ test('monthly presets, invalid ranges and trend boundaries',()=>{
  const monthly=cash.cashflowTrend(rows,{start:'2025-01-30',end:'2025-05-01'});
  assert.equal(monthly.granularity,'monthly');assert.equal(monthly.points.length,5);
  assert.equal(monthly.points.reduce((n,p)=>n+p.income-p.expense,0),cash.summarize(rows).difference);
+});
+
+test('today preset follows Jakarta midnight independently of browser/server timezone',()=>{
+ const previous=process.env.TZ;
+ try {
+  for(const zone of ['UTC','America/Los_Angeles','Pacific/Honolulu','Asia/Tokyo']) {
+   process.env.TZ=zone;
+   for(const [instant,expected] of [
+    ['2026-10-29T16:59:59.999Z','2026-10-29'],
+    ['2026-10-29T17:00:00.000Z','2026-10-30'],
+    ['2026-12-31T17:00:00.000Z','2027-01-01'],
+    ['2024-02-28T17:00:00.000Z','2024-02-29']
+   ]) {
+    const day=cash.todayJakarta(new Date(instant));
+    assert.equal(day,expected,zone);
+    const period=cash.presetPeriod('today',day);
+    assert.deepEqual(period,{start:expected,end:expected});
+    assert.deepEqual(cash.cashflowTrend([],period).points,[{date:expected,income:0,expense:0}]);
+   }
+  }
+  assert.deepEqual(cash.presetPeriod('month','2026-10-29'),{start:'2026-10-01',end:'2026-10-29'});
+  assert.equal(cash.matchingPreset({start:'2026-10-01',end:'2026-10-01'},'2026-10-01'),'month');
+  assert.equal(cash.matchingPreset({start:'2026-10-29',end:'2026-10-29'},'2026-10-29'),'today');
+  assert.equal(cash.matchingPreset({start:'2025-01-01',end:'2025-01-03'},'2026-10-29'),null);
+ }finally{if(previous===undefined)delete process.env.TZ;else process.env.TZ=previous;}
 });

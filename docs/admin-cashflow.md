@@ -182,3 +182,87 @@ Automated tests use a disposable SQLite database seeded with pre-migration dupli
 The test commands remain `node --test tests/*.test.mjs`, `npx tsc --noEmit`, `npm run lint`, and `NODE_USE_SYSTEM_CA=1 npm run build`. The build needs access to the project's existing Google Fonts endpoints; a sandbox-network failure was resolved by running the build with download access. Public route `/` remains statically rendered and `/admin` dynamic.
 
 Final browser checks used the production build on port 3100 with disposable credentials and a temporary database, never the store database. Verified: initial month-to-date empty state; manual income Rp150,000 and expense Rp25,000 producing Rp125,000 difference; required expense detail; duplicate recap amount/edit prompt; cross-month calendar range and URL persistence through refresh; database persistence after preview restart; type filtering; delete confirmation/cancellation; keyboard focus and Escape behavior; logout returning to login; public homepage smoke check. No browser warning/error logs were reported. Horizontal document width matched viewport content width at 320px, 390px and desktop; at 320px the calendar bounds were 12–292px inside the 305px content viewport. These targeted checks do not constitute a formal accessibility audit. Actual delete and conflicting-update behavior are covered by server tests. Final TypeScript, lint, six tests and production build passed.
+
+## Multi-item expense entry v2.1 (29 October 2026)
+
+The expense quick action opens `expense-form.tsx`: one Jakarta date, numbered items with searchable expense types and individual formatted Rupiah amounts, add/remove controls, an optional shared note, live item count/total, and one save action. At least one item remains. Empty/invalid rows block saving and can be removed; they are never silently stored. Entry is limited to 100 items and each amount retains the existing Rp1 trillion limit. The wider native dialog scrolls within the viewport; its footer remains in normal flow and does not cover inputs. Existing admin tokens, buttons, date picker and modal are reused; no dependency was added.
+
+`expense-type-selector.tsx` supports search, keyboard arrows/Enter, Escape dismissal and explicit creation confirmation. Five reusable defaults map to the existing reporting categories: Rokok/AICE/Jajan → Belanja Stok; Perabot → Operasional; Lainnya → Pengeluaran Lainnya. A custom type requires a trimmed name of 1–60 characters and one main-category choice. The database's unique normalized-name key prevents case-insensitive duplicates; a duplicate selects the existing type without remapping it. Every read/write action authenticates the administrator. There is no type-deletion endpoint.
+
+### Additive persistence
+
+Startup creates three tables without rewriting the existing `transactions` table or its historical IDs, amounts, categories and descriptions:
+
+- `expense_types`: reusable name, normalized unique name, and existing main-category key.
+- `expense_batches`: stable submission ID, Jakarta date, shared note, payload fingerprint and creation timestamp. Counts/totals are calculated from surviving items, never stored as extra financial records.
+- `expense_items`: one-to-one transaction link, expense type and batch references. Foreign keys restrict removal of used types and cascade only the link when an individual transaction is deleted.
+
+`saveExpenseBatch` validates the full payload and uses `BEGIN IMMEDIATE`/`COMMIT`/`ROLLBACK` for all records and links. An invalid/missing type after earlier inserts rolls back the entire batch. Each item creates exactly one ordinary expense transaction; its description remains separate from the type and shared batch note. Authenticated reads left-join the new metadata so legacy records remain visible. KPI/chart code still aggregates ordinary individual transactions exactly once.
+
+The client locks submission immediately and reuses one UUID on retries. A unique batch ID and SHA-256 fingerprint make an identical retry a successful no-op; reuse with different content returns an error. Batch metadata remains after all items are deleted so retrying an old request cannot recreate deleted expenses. This idempotency protects retries of the same submission; independently opening a new form intentionally creates a new submission.
+
+Back up SQLite before rollout using the earlier backup guidance. The migration is additive and idempotent. Rolling back application code can retain all three tables: old code still reads each expense as an ordinary transaction, although the type/note details require v2.1. Do not drop the new tables after recording expenses, because doing so loses those details. No data provider migration is needed.
+
+### History and editing limits
+
+`expense-history.tsx` groups only records sharing an explicit batch ID. Grouping happens before pagination (15 history entries per page), so one batch cannot split across pages; the heading still counts individual financial transactions. Desktop tables and mobile cards show date, count, aggregate amount, type summary and expandable details with shared notes and per-item actions. Single-item batches show the expense type as the compact heading. Unlinked legacy transactions remain separate, even with identical dates/types.
+
+Batch items support editing type and amount through the same expense item controls, with atomic category/type updates. Their shared date and note remain read-only. Additions after saving, editing a shared batch note/date, and deleting an entire batch are not offered in this increment. Individual deletion uses the existing explicit confirmation and refreshes totals; it never deletes sibling items. Legacy expenses retain the prior category/required-detail editor. The manual income form, daily recap conflict checks, authentication, range filters and KPI/chart formulas remain unchanged.
+
+### Verification
+
+Passed automated server/database/auth/date/environment tests, TypeScript, ESLint and production build. The initial sandboxed build could not download the existing Google Fonts; the build passed with network access and `NODE_USE_SYSTEM_CA=1`. Public `/` remains static and `/admin` dynamic.
+
+New regression assertions cover authenticated access to all expense actions, default/custom type persistence, trim/length/category validation, duplicate names without remapping, single and multi-item batches, empty/zero/negative/fractional/oversized amounts, invalid dates, rollback after an earlier item insert, identical and changed-payload retries, 905,000 Rupiah totals without double counting, chart agreement, shared notes, grouping isolation, editing a linked item's type/amount, deletion, independent SQLite reads, retry tombstones and existing legacy/income rules.
+
+Production-browser checks use only temporary credentials and a disposable SQLite database: keyboard search/Enter selection, custom type creation and reuse, three items totaling Rp905,000, note display, save, grouped details, and an item edit updating KPI/chart to Rp925,000. Narrow 320px and 390px inspection confirmed a dialog within the viewport and no horizontal document overflow; removing a middle row preserved the first row and total, the last row could not be removed, and zero amount submission showed validation. These checks are targeted, not a formal accessibility audit.
+
+## UI/UX refinement v2.2 (29 October 2026)
+
+### Period filter
+
+**Hari Ini** is the first preset and selects the inclusive range `start=todayJakarta()` / `end=todayJakarta()`. **Bulan Ini** remains the default. The dashboard still sends one range to `financialOverview`, so KPI, chart and history use the same filtered records. The custom calendar and its apply interaction are unchanged. Presets use the existing active style; on small screens the four buttons form a two-column grid with 44px touch targets, rather than squeezing four labels into one row.
+
+The date helper accepts an optional clock instant for timezone regression tests and always formats Asia/Jakarta. A dashboard timer refreshes the business date at the next Jakarta midnight; focus/visibility events also catch up after a suspended tab resumes. A currently selected preset moves to its new range and replaces the URL at the date boundary; a custom range stays fixed. Date inputs also receive the updated today limit. Normal preset selection continues to push `start`/`end` URL parameters, and refresh/back/forward restore ranges. Active preset identity is explicit while selecting filters so only one preset is highlighted, including when Hari Ini and Bulan Ini have the same range on the first day of a month. Initial range inference prefers Bulan Ini in that tie.
+
+### History actions and rationale
+
+- All individual transactions, including income and legacy expenses, have one right-aligned ellipsis trigger for secondary actions. This keeps the amount prominent and avoids repeating text buttons across the list.
+- Batch headers have a left-side chevron as their one primary action. Expand/collapse stays directly available, separate from mutation menus. The total stays in the existing desktop amount column and prominently in the mobile card.
+- Expanded expense items use the same right-aligned menu, explicitly labeled **Edit Item** / **Hapus Item**. Standalone menus say **Edit Transaksi** / **Hapus Transaksi**. No unsupported batch-wide action is presented.
+- Menu entries pair Lucide icons with text. Delete follows edit, separated by a thin divider and subtle brand/destructive text. Selecting delete opens the existing confirmation dialog; its title, explanation and confirm button now distinguish one batch item from one standalone transaction. Sibling items are explicitly preserved.
+
+`transaction-actions.tsx` reuses the installed Radix Popover as the existing equivalent menu primitive; no dependency was added. Content is portalled with collision padding and available-height scrolling, so row/container overflow does not clip it. Triggers have contextual accessible labels, native title tooltips and 44px targets. Menus focus their first action, support Up/Down/Home/End, Enter/Space and Escape, and restore trigger focus on dismissal. Opening a confirmation/editor preserves modal focus instead of stealing it back to the menu. Focus uses the existing thin admin focus styling.
+
+### Files changed for v2.2
+
+- `lib/cashflow.ts`: today preset, testable Jakarta clock and unambiguous initial preset matching.
+- `app/admin/period-filter.tsx`: first-position Hari Ini and explicit active preset.
+- `app/admin/dashboard.tsx`: current business date rollover, preset state/URL synchronization and scoped delete confirmation copy.
+- `app/admin/transaction-actions.tsx` (new): reusable accessible transaction/item action menu.
+- `app/admin/expense-history.tsx`: shared menus, left chevrons and right-side mobile actions.
+- `app/admin/admin.css`: small-screen preset grid and scoped menu/disclosure styling.
+- `tests/cashflow.test.mjs`: timezone/midnight/year/leap-day, first-of-month default, single-day exclusion and KPI/chart agreement regressions.
+- `PROJECT_CONTEXT.md` and this guide: implementation and verification.
+
+### Verification
+
+Passed `node --test tests/*.test.mjs` (7 tests), `npx tsc --noEmit`, `npm run lint`, and `NODE_USE_SYSTEM_CA=1 npm run build` with download access for the existing Google Fonts. Static public `/` and dynamic `/admin` behavior remain unchanged.
+
+A production preview used disposable credentials and a separate temporary SQLite database seeded with income today/yesterday, a legacy expense, a single-item batch and a multi-item batch. Default Bulan Ini showed Rp1,600,000 income; Hari Ini showed Rp1,500,000 income, Rp930,000 expense and Rp570,000 difference. Its chart contained one matching day and its history excluded yesterday. Refresh preserved the URL and selected range. The custom 27–28 October range showed only yesterday's Rp100,000; Bulan Lalu showed the existing zero/empty state.
+
+Browser checks covered group expansion, income and expense-item menus, item editor access, item deletion confirmation/cancellation, menu arrow navigation, Escape and restored trigger focus. At 320px and 390px the document had no horizontal overflow and the portalled menus remained within viewport bounds. Desktop layout/menu positioning was checked at 1024px and 1440px. Existing automated tests continue to cover authenticated CRUD, item editing/deletion, batch atomicity/idempotency, custom type persistence and legacy data. These are targeted checks, not a formal accessibility audit.
+
+No v2.2 schema migration, data rewrite, new financial calculation, authentication change or persistence change was introduced. Only the required period/date handling and action presentation changed.
+
+## UI component standardization v2.3 (29 October 2026)
+
+The admin now has a small shared UI layer under `components/ui/admin/`. See [Admin UI component guide](admin-ui-components.md) for the complete audit inventory, canonical components, variants, examples, token governance, accessibility rules, changed files and future development rules.
+
+History Tipe transaksi, Sumber Pemasukan, legacy expense category and the main category for a custom expense type now use `AppSelect` instead of displayed native selects. Expense types use reusable `AppCombobox`, with creation/validation/persistence kept in `ExpenseTypeSelector`. The old Popover-based hand-written action menu is replaced by `AppDropdownMenu`. Formatting is shared by `CurrencyInput`; ordinary input/textarea and icon actions have shared components. The existing native modal is extracted to `AppDialog`, including an alertdialog variant for explicit deletion confirmation. Existing Button is retained and gains a destructive confirmation variant. Date controls, period presets, cards, badges, tables, chart, status and empty-state patterns are reused rather than rebuilt.
+
+New direct dependencies are only Radix Select and Radix DropdownMenu, matching the installed Radix Popover family. No full UI framework, form library, command palette or parallel token system is added. `admin-ui.css` is imported only by the admin page and reuses the existing global palette/composition tokens; broad and duplicated input/select/popup styling has been removed from the feature stylesheet. Normal controls share a 44px minimum target, thin border, radius, text, focus, disabled/error and popup treatment. The public site's source/style behavior is preserved.
+
+There are no changes to the database adapter/schema, authentication, server actions, financial calculations or transaction payloads in this UI increment. Required/native validation and authoritative server validation remain. Search/custom type persistence, atomic batch saves, edit/delete scope, URL date ranges, grouped history and historical records continue to use the existing logic.
+
+Validation for v2.3: TypeScript, ESLint, seven existing regression tests and production build passed. A disposable production preview verified filtering, keyboard source selection/income save, searchable/custom expense types, multi-item save, KPI/chart updates, legacy category editing and native required-detail validation. Select/search/calendar popups were tested inside native dialogs, including Escape and focus restoration. Controls measured 44px; 320px/390px mobile and 1024px desktop checks showed no horizontal overflow/clipped popups. Final browser warning/error logs were empty. Detailed evidence and usage rules are in the shared UI guide.

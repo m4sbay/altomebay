@@ -8,6 +8,7 @@ import { todayJakarta, presetPeriod, validatePeriod } from "@/lib/cashflow";
 import { Dashboard } from "./dashboard";
 import { Login } from "./login";
 import "./admin.css";
+import "@/components/ui/admin/admin-ui.css";
 export const metadata: Metadata = {title:"Ringkasan Keuangan — Altomebay Admin",robots:{index:false,follow:false}};
 export const runtime = "nodejs";
 export default async function AdminPage({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}) {

@@ -5,12 +5,13 @@ export const categories = {
 export type TransactionType = keyof typeof categories;
 export type TransactionCategory = keyof typeof categories.income | keyof typeof categories.expense;
 export interface CashTransaction {
+ expenseTypeId?: string; expenseTypeName?: string; batchId?: string; batchNote?: string;
  id: string; type: TransactionType; amount: number; category: TransactionCategory;
  description: string | null; transactionDate: string; createdAt: string; updatedAt: string;
 }
 export type TransactionInput = Omit<CashTransaction, "id" | "createdAt" | "updatedAt">;
 export const rupiah = (amount: number) => `Rp${new Intl.NumberFormat("id-ID").format(amount)}`;
-export const todayJakarta = () => new Intl.DateTimeFormat("en-CA", {timeZone:"Asia/Jakarta",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+export const todayJakarta = (now = new Date()) => new Intl.DateTimeFormat("en-CA", {timeZone:"Asia/Jakarta",year:"numeric",month:"2-digit",day:"2-digit"}).format(now);
 export const formatDate = (date: string) => new Intl.DateTimeFormat("id-ID", {dateStyle:"full",timeZone:"Asia/Jakarta"}).format(new Date(`${date}T12:00:00+07:00`));
 export function validDate(value: unknown): value is string {
  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0,10) === value && value <= todayJakarta();
@@ -35,8 +36,9 @@ export function summarize(rows: CashTransaction[]) {
 export const categoryLabel = (row: Pick<CashTransaction,"type"|"category">) => (categories[row.type] as Record<string,string>)[row.category];
 
 export interface Period { start: string; end: string }
-export type PeriodPreset = "month" | "previous" | "week";
+export type PeriodPreset = "today" | "month" | "previous" | "week";
 export function presetPeriod(preset: PeriodPreset, today = todayJakarta()): Period {
+ if (preset === "today") return {start:today,end:today};
  const date = new Date(`${today}T12:00:00Z`);
  if (preset === "week") { date.setUTCDate(date.getUTCDate() - 6); return {start:date.toISOString().slice(0,10),end:today}; }
  if (preset === "previous") {
@@ -45,6 +47,12 @@ export function presetPeriod(preset: PeriodPreset, today = todayJakarta()): Peri
   return {start:`${end.slice(0,7)}-01`,end};
  }
  return {start:`${today.slice(0,7)}-01`,end:today};
+}
+export function matchingPreset(period: Period, today: string): PeriodPreset | null {
+ // Month wins the first-of-month tie so the default remains Bulan Ini.
+ return (["month","today","previous","week"] as PeriodPreset[]).find(key=>{
+  const value=presetPeriod(key,today);return value.start===period.start&&value.end===period.end;
+ })??null;
 }
 export function validatePeriod(start: unknown, end: unknown): Period {
  if (!validDate(start) || !validDate(end)) throw new Error("Pilih tanggal yang valid, maksimal hari ini.");

@@ -22,7 +22,6 @@
 .admin-row > :first-child { @apply col-span-2 md:col-span-1; }
 .admin-row > p { @apply col-start-1 md:col-start-auto; }
 .admin-row-actions { @apply flex justify-end gap-1 col-start-2 row-start-2 row-span-2 md:col-start-auto md:row-start-auto md:row-span-1; }
-.admin-row-actions button,.admin-close { @apply flex items-center justify-center min-h-touch min-w-touch rounded-control hover:bg-base-soft; }
 .admin-type { @apply text-xs font-medium rounded-pill bg-base-soft border border-border py-1 px-2 w-fit; }
 .admin-expense { @apply bg-brand-soft text-brand border-brand-muted; }
 .admin-empty { @apply flex flex-col items-center justify-center gap-4 py-16 text-center; }
@@ -32,7 +31,6 @@
 .admin-dialog::backdrop { background:color-mix(in srgb,var(--color-ink) 45%,transparent); }
 .admin-form { @apply grid gap-5 mt-6; }
 .admin-shell label,.admin-dialog label { @apply text-sm font-semibold; }
-.admin-shell input:not([type=radio]):not([type=hidden]),.admin-dialog input:not([type=radio]):not([type=hidden]),.admin-dialog select { @apply block w-full rounded-control border border-border bg-base text-ink px-3 py-3 mt-2 min-h-touch min-w-0 font-normal; }
 .admin-form label { @apply block; }
 .admin-form-actions { @apply flex flex-wrap justify-end gap-3 mt-6; }
 .admin-segment { @apply grid grid-cols-2 gap-2; }
@@ -43,45 +41,16 @@
 .admin-segment input:focus-visible + span { outline:1px solid var(--color-brand); outline-offset:2px; }
 @media(min-width:768px) { .admin-row {grid-template-columns:minmax(0,1fr) 9rem minmax(9rem,auto) 6rem;} }
 
-/* The old focus added a 2px outline outside the 1px input border; buttons
-   also inherited a separate 3px global outline. Controls now use one border
-   plus a quiet surface change for keyboard focus, scoped to admin only. */
-.admin-shell input:not([type=radio]):not([type=hidden]),
-.admin-dialog input:not([type=radio]):not([type=hidden]),
-.admin-dialog select,
-.admin-dialog textarea,
-.admin-date-trigger {
-  transition: border-color var(--duration-ui), background-color var(--duration-ui);
-}
-.admin-shell input:not([type=radio]):focus,
-.admin-dialog input:not([type=radio]):focus,
-.admin-dialog select:focus,
-.admin-dialog textarea:focus,
-.admin-date-trigger:focus {
-  border-color: var(--color-brand);
-  outline: none;
-}
-.admin-shell input:not([type=radio]):focus-visible,
-.admin-dialog input:not([type=radio]):focus-visible,
-.admin-dialog select:focus-visible,
-.admin-dialog textarea:focus-visible,
-.admin-date-trigger:focus-visible {
-  background-color: var(--color-brand-soft);
-}
 .admin-date-picker { @apply min-w-0; }
 .admin-date-picker > label { @apply block text-sm font-semibold text-ink-soft; }
 .admin-date-trigger {
-  @apply flex items-center gap-2 w-full min-h-touch rounded-control border border-border bg-base text-ink text-sm px-3 py-3 mt-2 text-left;
+  @apply flex items-center gap-2 text-left;
 }
 .admin-date-trigger > span { @apply min-w-0; overflow-wrap:anywhere; }
 .admin-date-trigger > svg { @apply shrink-0 text-ink-soft; }
-.admin-date-trigger:hover:not(:disabled):not(:focus) { border-color:var(--color-brand-muted); }
-.admin-date-trigger:disabled { @apply opacity-60; }
-.admin-date-trigger[data-state=open] { border-color:var(--color-brand); }
 .admin-datebar .admin-date-picker { @apply w-full sm:w-auto; }
 .admin-dialog .admin-date-picker > label { @apply text-ink; }
 .admin-calendar-popover {
-  @apply z-50 rounded-card border border-border bg-base text-ink p-3 shadow-soft-hover;
   width:min(22rem,calc(100vw - 2.5rem));
   max-height:var(--radix-popover-content-available-height);
   overflow-y:auto;
@@ -122,13 +91,12 @@
 .admin-calendar .rdp-selected .rdp-day_button:focus-visible { @apply border-ink bg-brand text-on-brand; }
 .admin-calendar-note { @apply text-xs text-ink-soft text-center mt-3 pt-3 border-t border-border; }
 @media(prefers-reduced-motion:reduce) {
-  .admin-shell input,.admin-dialog input,.admin-dialog select,.admin-dialog textarea,
-  .admin-date-trigger,.admin-calendar .rdp-day_button { transition:none; }
+  .admin-calendar .rdp-day_button { transition:none; }
 }
 
 /* Financial overview v2 — all overrides remain scoped to admin. */
-.admin-shell .action,.admin-dialog .action { min-height:2.75rem; background-image:none; }
-.admin-shell button:focus-visible,.admin-dialog button:focus-visible,.admin-action-menu button:focus-visible { outline:1px solid var(--color-brand); outline-offset:2px; }
+.admin-shell .action,.admin-dialog .action { min-height:var(--touch-target); background-image:none; }
+.admin-shell button:focus-visible,.admin-dialog button:focus-visible { outline:1px solid var(--color-brand); outline-offset:2px; }
 .admin-header-nav { @apply ml-auto flex items-center gap-6 text-sm font-medium; }
 .admin-header-nav > a { @apply text-brand; }
 .admin-heading { @apply flex-wrap; }
@@ -155,8 +123,6 @@
 .admin-quick { @apply mt-7 flex flex-wrap justify-between items-center gap-5; }
 .admin-history { @apply mt-7; }
 .admin-type-filter { @apply flex items-center flex-wrap gap-3; }
-.admin-shell select { @apply rounded-control border border-border bg-base px-3 py-2 min-h-touch text-sm; }
-.admin-shell select:focus-visible { outline:1px solid var(--color-brand); outline-offset:2px; }
 .admin-table { @apply w-full text-sm border-collapse; table-layout:fixed; }
 .admin-table th { @apply text-left text-xs text-ink-soft font-medium border-y border-border bg-base-soft px-3 py-4; }
 .admin-table td { @apply px-3 py-4 border-b border-border; overflow-wrap:anywhere; }
@@ -168,14 +134,9 @@
 .admin-table th:nth-child(6) { width:7%; }
 .admin-table .admin-type { white-space:nowrap; }
 .admin-table-amount { @apply text-right font-semibold tabular-nums; }
-.admin-row-menu { @apply flex items-center justify-center min-h-touch min-w-touch rounded-control hover:bg-base-soft; }
-.admin-action-menu { @apply z-50 bg-base text-ink rounded-control border border-border p-1 shadow-soft-hover; }
-.admin-action-menu button { @apply block w-full px-4 py-3 text-left text-sm rounded-control hover:bg-base-soft; }
-.admin-action-menu button:last-child { @apply text-brand; }
 .admin-mobile-list { @apply hidden list-none p-0 m-0; }
 .admin-mobile-list li { @apply py-4 border-b border-border; overflow-wrap:anywhere; }
 .admin-pagination { @apply flex items-center justify-between gap-2 mt-5 text-sm; }
-.admin-dialog textarea { @apply block w-full rounded-control border border-border bg-base text-ink px-3 py-3 mt-2 min-h-touch min-w-0 font-normal; resize:vertical; }
 .admin-form details summary { @apply text-sm text-ink-soft cursor-pointer min-h-touch flex items-center; }
 @media(max-width:1023px) { .admin-table {display:none;} .admin-mobile-list {display:block;} }
 @media(max-width:639px) {
@@ -204,3 +165,28 @@
 .admin-summary h2 { font-size:.875rem; font-weight:500; letter-spacing:0; }
 .admin-quick h2 { font-size:1rem; }
 .admin-empty h3 { font-size:1.125rem; }
+
+/* Expense entry v2.1 */
+.admin-dialog-wide { width:min(46rem,calc(100% - 2rem)); }
+.expense-items { @apply grid gap-5; }
+.expense-item { @apply border border-border rounded-control p-4 min-w-0; }
+.expense-item legend { @apply px-2 text-sm font-semibold; }
+.expense-fields { @apply grid gap-4 sm:grid-cols-2; }
+.expense-fields > * { min-width:0; }
+.expense-selector { position:relative; }
+.expense-create { @apply mt-3 p-3 border border-border rounded-control grid gap-3; }
+.expense-summary { @apply p-4 bg-base-soft border border-border rounded-control; }
+.expense-history-detail { @apply p-3 bg-base-soft rounded-control; }
+.expense-history-detail ul { @apply list-none p-0 m-0; }
+.expense-history-detail li { @apply flex flex-wrap items-center justify-between gap-3 py-3 border-b border-border; }
+
+/* v2.2: primary disclosure stays separate from secondary actions. */
+.expense-group-heading,.expense-mobile-heading { @apply flex items-start gap-2; }
+.expense-mobile-heading > .min-w-0 { @apply flex-1; }
+.expense-group-toggle[aria-expanded=true] { @apply text-brand; }
+.expense-history-detail li { @apply flex-nowrap; }
+.expense-history-detail .app-icon-button,.expense-mobile-heading .app-icon-button { @apply shrink-0; }
+@media(max-width:639px) {
+ .admin-presets { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .admin-presets button { @apply text-sm px-2; }
+}

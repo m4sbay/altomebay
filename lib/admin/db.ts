@@ -1,40 +1,45 @@
-import "server-only";
-import { defaultExpenseTypes } from "../expenses";
-import { DatabaseSync } from "node:sqlite";
-import { mkdirSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-let instance: DatabaseSync | undefined;
-export function db() {
- if (instance) return instance;
- const path = resolve(/* turbopackIgnore: true */ process.env.ADMIN_DATABASE_PATH || "data/admin.sqlite");
- mkdirSync(dirname(path), {recursive:true,mode:0o700});
- instance = new DatabaseSync(path);
- instance.exec(`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;
- CREATE TABLE IF NOT EXISTS transactions (
- id TEXT PRIMARY KEY, type TEXT NOT NULL CHECK(type IN ('income','expense')),
- amount INTEGER NOT NULL CHECK(amount > 0 AND amount <= 1000000000000), category TEXT NOT NULL,
- description TEXT, transactionDate TEXT NOT NULL, createdAt TEXT NOT NULL, updatedAt TEXT NOT NULL);
- CREATE INDEX IF NOT EXISTS transactions_date ON transactions(transactionDate,createdAt);
- CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, expires INTEGER NOT NULL, credential TEXT NOT NULL);
- CREATE TABLE IF NOT EXISTS login_attempts (id INTEGER PRIMARY KEY CHECK(id=1), failures INTEGER NOT NULL, reset INTEGER NOT NULL);`);
- // Triggers protect new writes atomically without deleting or relabeling legacy duplicates.
- // Existing duplicate groups remain editable when their date/type/category is unchanged.
- instance.exec(`
- CREATE TRIGGER IF NOT EXISTS daily_sales_insert BEFORE INSERT ON transactions
- WHEN NEW.type='income' AND NEW.category='sales' AND EXISTS (
- SELECT 1 FROM transactions WHERE type='income' AND category='sales' AND transactionDate=NEW.transactionDate)
- BEGIN SELECT RAISE(ABORT, 'daily_sales_duplicate'); END;
- CREATE TRIGGER IF NOT EXISTS daily_sales_update BEFORE UPDATE OF type,category,transactionDate ON transactions
- WHEN NEW.type='income' AND NEW.category='sales'
- AND (OLD.type<>NEW.type OR OLD.category<>NEW.category OR OLD.transactionDate<>NEW.transactionDate)
- AND EXISTS (SELECT 1 FROM transactions WHERE type='income' AND category='sales' AND transactionDate=NEW.transactionDate AND id<>NEW.id)
- BEGIN SELECT RAISE(ABORT, 'daily_sales_duplicate'); END;
- `);
- instance.exec(`PRAGMA foreign_keys=ON;
- CREATE TABLE IF NOT EXISTS expense_types (id TEXT PRIMARY KEY, name TEXT NOT NULL, normalizedName TEXT NOT NULL UNIQUE, category TEXT NOT NULL);
- CREATE TABLE IF NOT EXISTS expense_batches (id TEXT PRIMARY KEY, note TEXT NOT NULL, transactionDate TEXT NOT NULL, fingerprint TEXT NOT NULL, createdAt TEXT NOT NULL);
- CREATE TABLE IF NOT EXISTS expense_items (transactionId TEXT PRIMARY KEY REFERENCES transactions(id) ON DELETE CASCADE, typeId TEXT NOT NULL REFERENCES expense_types(id), batchId TEXT NOT NULL REFERENCES expense_batches(id));
- CREATE INDEX IF NOT EXISTS expense_items_batch ON expense_items(batchId);`);
- for(const type of defaultExpenseTypes) instance.prepare('INSERT OR IGNORE INTO expense_types VALUES(?,?,?,?)').run(type.id,type.name,type.name.toLocaleLowerCase('id-ID'),type.category);
- return instance;
+import 'server-only';
+import { attachDatabasePool } from '@vercel/functions';
+import type { PoolClient } from 'pg';
+import { createPostgresPool, normalizeRows, safeDatabaseError } from './postgres.mjs';
+
+type Value = string | number | null;
+export interface DatabaseSession {
+ query<T = Record<string, unknown>>(sql: string, values?: Value[]): Promise<{rows:T[];rowCount:number|null}>;
+}
+export interface Database extends DatabaseSession {
+ transaction<T>(work:(session:DatabaseSession)=>Promise<T>):Promise<T>;
+}
+let pool: ReturnType<typeof createPostgresPool> | undefined;
+function connectionPool() {
+ if (!pool) {
+  pool=createPostgresPool();
+  if(process.env.VERCEL)attachDatabasePool(pool);
+ }
+ return pool;
+}
+function session(client: Pick<PoolClient,'query'>):DatabaseSession {
+ return {async query<T>(sql:string,values:Value[]=[]){
+  try{const result=await client.query(sql,values);return {rows:normalizeRows(result.rows) as T[],rowCount:result.rowCount};}
+  catch(error){throw safeDatabaseError(error);}
+ }};
+}
+// Lazy pool creation: no filesystem, no SQLite fallback, no DDL on requests/build.
+export function db():Database {
+ return {
+  async query<T>(sql:string,values:Value[]=[]){try{return await session(connectionPool()).query<T>(sql,values);}catch(error){throw safeDatabaseError(error);}},
+  async transaction<T>(work:(client:DatabaseSession)=>Promise<T>){
+   let client:PoolClient|undefined;
+   try {
+    client=await connectionPool().connect();
+    await client.query('BEGIN');
+    // Transaction-local SET is compatible with Neon's PgBouncer; startup GUCs are not.
+    await client.query("SET LOCAL statement_timeout='15s'");
+    const result=await work(session(client));
+    await client.query('COMMIT');
+    return result;
+   }catch(error){if(client){try{await client.query('ROLLBACK');}catch{client.release(true);client=undefined;}}throw safeDatabaseError(error);}
+   finally{client?.release();}
+  },
+ };
 }

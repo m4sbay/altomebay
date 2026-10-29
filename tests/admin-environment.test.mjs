@@ -52,7 +52,7 @@ test('Next.js loads generated .env.local credentials and the actual admin guard 
         compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 }
       }).outputText;
       const loaded = { exports: {} };
-      const req = (name) => ['server-only', 'next/headers', './db'].includes(name) ? {} : require(name);
+      const req = (name) => ['server-only', 'next/headers', './db', './postgres.mjs'].includes(name) ? {} : require(name);
       new Function('require', 'module', 'exports', compiled)(req, loaded, loaded.exports);
       process.stdout.write(JSON.stringify({ present: !!process.env.ADMIN_PASSWORD_HASH, configured: loaded.exports.configured() }));
     `;

@@ -34,3 +34,9 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Admin database deployment
+
+The admin now requires server-only `DATABASE_URL` for managed PostgreSQL/Neon; there is no runtime SQLite filesystem fallback. Keep the existing `ADMIN_PASSWORD_HASH`. Follow [the step-by-step Neon/Vercel migration guide](docs/neon-vercel-migration.md) before deploying the admin. Schema/import commands are explicit, not part of the build. Local SQLite and its backups remain migration sources and must not be deleted.
+
+Production cutover is not yet verified: Neon setup, environment configuration and persistence across a Vercel redeploy still need to be completed. Run `npm test`, `npx tsc --noEmit`, `npm run lint`, and `npm run build` for local validation.

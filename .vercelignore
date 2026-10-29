@@ -1,0 +1,18 @@
+# Private local data and credentials must never be uploaded by the deployment CLI.
+data/
+.env*
+*.pem
+.git/
+.vercel/
+.claude/
+.codex/
+.agents/
+.prd/
+node_modules/
+.next/
+out/
+build/
+coverage/
+*.tsbuildinfo
+.DS_Store
+*-debug.log*

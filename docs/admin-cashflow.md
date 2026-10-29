@@ -1,5 +1,11 @@
 # Keuangan Harian Admin
 
+## Current database status — Neon migration implementation
+
+The current runtime uses **PostgreSQL/Neon**, including transactions, expense metadata, sessions and login throttle. There is no runtime SQLite fallback and no attempt to create `/var/task/data`. UI and financial DTO/form behavior remain unchanged. `DATABASE_URL` is required; TLS certificate verification is enforced. Production cutover is **not yet verified**: Neon has not been created/configured, and a real Vercel redeploy persistence check is still pending.
+
+Follow [the beginner Neon/Vercel migration guide](neon-vercel-migration.md) for account setup, private environment values, additive schema migration, read-only SQLite backup, dry-run/import comparison and before/after redeploy verification. The original local SQLite database is preserved; a private backup has been made and its 2 transactions were rehearsed successfully in embedded PostgreSQL. Older version sections below are historical implementation notes and must not be used as instructions to restore SQLite in Vercel.
+
 ## Architecture and files
 
 - `app/admin/page.tsx`: server authentication gate, shared brand header, metadata.
@@ -9,30 +15,22 @@
 - `app/admin/admin.css`: isolated admin styles using existing brand, typography, spacing, radius and button tokens.
 - `lib/cashflow.ts`: category definitions, types, Rupiah/Jakarta dates, server validation and summary.
 - `lib/admin/auth.ts`: scrypt password verification, hashed random sessions with eight-hour expiry, logout and password-change revocation, persistent login throttle.
-- `lib/admin/db.ts`: SQLite schema, indexes, prepared statements, WAL and busy timeout.
+- `lib/admin/db.ts`: async PostgreSQL query/transaction facade, lazy small connection pool and Vercel pool lifecycle attachment. Configuration/TLS/error sanitization live in `lib/admin/postgres.mjs`.
 - `types/sqlite.d.ts`: minimal declarations for native SQLite because this project uses Node 20 type definitions.
 - `scripts/admin-password.mjs`: password hash generation from stdin.
 - `tests/cashflow.test.mjs`: business rules and server CRUD/auth/database tests in a disposable database.
 - `next.config.ts`: static export removed to enable server functionality. Public page source and design are unchanged.
 - `.gitignore`: ignores runtime database directory.
 
-## Local setup
+## Local setup and hosting
 
-Use Node.js 22.13+ (or newer supported LTS) with `node:sqlite`. The calendar uses only `react-day-picker` and `@radix-ui/react-popover`; no full UI library is installed.
+Use Node.js 22.16+ (or newer supported LTS). Keep the existing `ADMIN_PASSWORD_HASH` and set server-only `DATABASE_URL` to a Neon pooled connection string in `.env.local`; use a separate development branch. Optional `DATABASE_URL_UNPOOLED` points to the same branch/database for migration tooling. See `.env.example`; never expose these values through NEXT_PUBLIC variables or commit them.
 
-Generate a hash using `node scripts/admin-password.mjs`, supply a password of at least 12 characters through stdin, then end input (Ctrl-D on macOS/Linux). The terminal may echo input; run this privately. Save the resulting `ADMIN_PASSWORD_HASH=salt:hash` line in `.env.local`. Do not commit the password or hash.
+Generate an admin hash only when initially configuring or intentionally rotating a password using `node scripts/admin-password.mjs`. A database-provider change alone does not require password rotation.
 
-Optional environment variable: `ADMIN_DATABASE_PATH=/absolute/persistent/path/admin.sqlite`. Default: `data/admin.sqlite`, outside public assets and ignored by Git. Keep the directory private. Back up via SQLite's online backup tooling or stop the app before copying the database and its WAL files.
+Run schema migration/import deliberately with the procedure in [neon-vercel-migration.md](neon-vercel-migration.md), then `npm run dev`. Runtime does not create tables, directories or local databases. Builds do not require connecting to Neon and must not run import/migration scripts. Missing/invalid configuration fails closed with a safe error.
 
-Run `npm run dev` and visit `/admin`. Without a valid password hash the admin remains locked, with a setup message. Use the generated password to log in. No default password, seeded data, browser persistence, or public transaction API exists.
-
-For production: `npm run build`, then `npm start` behind HTTPS. Production cookies require HTTPS. Static `out/` deployment is no longer supported. Public routes remain eligible for static prerendering.
-
-## Hosting trade-off
-
-This MVP requires one long-running Node server and a persistent local volume. SQLite is not suitable for ephemeral Vercel function disks or multiple replicas. Before Vercel deployment, replace the database adapter with a managed SQL service and retain server-side session and transaction checks. This is a deployment prerequisite, not an optional persistence fallback.
-
-Password rotation invalidates existing sessions. Five failed attempts lock all login attempts for 15 minutes; this simple single-admin throttle can temporarily block the owner, so add trusted reverse-proxy throttling or managed authentication as traffic grows. Do not trust arbitrary forwarded IP headers. Use HTTPS and protect access to the environment and database volume.
+For Vercel, configure Production DATABASE_URL and the existing ADMIN_PASSWORD_HASH, use Node runtime and deploy this PostgreSQL version after migration. Preview/Development should use separate Neon branches. HTTPS secure cookies and Strict/HttpOnly eight-hour sessions remain. PostgreSQL row locking persists the shared login throttle across serverless instances. Public routes remain statically eligible.
 
 ## Verification
 
@@ -266,3 +264,10 @@ New direct dependencies are only Radix Select and Radix DropdownMenu, matching t
 There are no changes to the database adapter/schema, authentication, server actions, financial calculations or transaction payloads in this UI increment. Required/native validation and authoritative server validation remain. Search/custom type persistence, atomic batch saves, edit/delete scope, URL date ranges, grouped history and historical records continue to use the existing logic.
 
 Validation for v2.3: TypeScript, ESLint, seven existing regression tests and production build passed. A disposable production preview verified filtering, keyboard source selection/income save, searchable/custom expense types, multi-item save, KPI/chart updates, legacy category editing and native required-detail validation. Select/search/calendar popups were tested inside native dialogs, including Escape and focus restoration. Controls measured 44px; 320px/390px mobile and 1024px desktop checks showed no horizontal overflow/clipped popups. Final browser warning/error logs were empty. Detailed evidence and usage rules are in the shared UI guide.
+
+
+## PostgreSQL migration verification status
+
+Audit covered all SQLite calls in the database adapter, auth and Server Actions, including daily-sales triggers, expense links, default/custom types, idempotency, session revocation and login throttle. The adapter is now async; all callers await parameterized PostgreSQL queries. Each batch/item transaction is pinned to one checked-out client, and unique batch IDs/fingerprints prevent duplicate retries across instances. A unique daily-sales date claim plus triggers preserves imported legacy duplicates while protecting new writes. New dependency `pg` is used with `@vercel/functions`; PGlite and PostgreSQL typings are development-only.
+
+Local verification: 13 tests pass; 1 explicitly opted-in live PostgreSQL concurrency test is skipped without a dedicated TEST_DATABASE_URL. The default suite executes real PostgreSQL schema/PLpgSQL through embedded PGlite, covers migration checksum/idempotency, exact SQLite import/rollback/conflicts, credentials-safe errors, BIGINT DTOs and same-client commit/rollback/release, and retains auth/CRUD/date/KPI/chart/batch regression coverage. TypeScript, lint and production build are required. These default tests alone do not establish production connectivity. Subsequent live Neon concurrency and HTTP application tests passed on a separate branch. Production setup and persistence were verified on 30 October 2026 WIB: the owner saved transactions on Vercel; after a second READY deployment, independent TLS SQL verification returned snapshotMatches:true for the same 2 transactions (income Rp1,000,000, expense Rp10,000) and all financial metadata. Production public/admin HTTP checks passed. The original SQLite/backup remain untouched; earlier imported transactions intentionally deleted by the owner were not restored. See docs/neon-vercel-migration.md for deployment IDs, exact command output, evidence and limits.

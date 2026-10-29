@@ -6,29 +6,43 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --test tests/*.test.mjs",
+    "db:migrate": "node scripts/database/migrate.mjs",
+    "db:backup": "node scripts/database/backup-sqlite.mjs",
+    "db:import": "node scripts/database/import-sqlite.mjs",
+    "db:verify": "node scripts/database/verify.mjs"
   },
   "dependencies": {
+    "@neon/config": "^1.9.5",
+    "@neon/env": "^1.6.6",
     "@radix-ui/react-dropdown-menu": "^2.2.1",
     "@radix-ui/react-popover": "^1.3.1",
     "@radix-ui/react-select": "^2.4.1",
+    "@vercel/functions": "^3.10.4",
     "framer-motion": "^12.42.2",
     "gsap": "^3.15.0",
     "lenis": "^1.3.25",
     "lucide-react": "^1.23.0",
     "next": "16.2.10",
+    "pg": "^8.23.1",
     "react": "19.2.4",
     "react-day-picker": "^9.14.0",
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.13",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=22.16.0"
   }
 }

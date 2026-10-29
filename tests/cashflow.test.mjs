@@ -5,25 +5,26 @@ import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve, join } from 'node:path';
 import { createRequire } from 'node:module';
+import { testDatabase } from './helpers/postgres.mjs';
+import { importSnapshot, tableColumns } from '../scripts/database/sqlite-import.mjs';
 import { randomBytes, scryptSync } from 'node:crypto';
 const nativeRequire=createRequire(import.meta.url);
 const cache=new Map();
 const jar=new Map();
 const temp=mkdtempSync(join(tmpdir(),'altomebay-test-'));
-process.env.ADMIN_DATABASE_PATH=join(temp,'cash.sqlite');
+const postgres=await testDatabase();
+const testDb=postgres.database;
 function load(file) {
  const path=resolve(file);if(cache.has(path))return cache.get(path).exports;
  const loaded={exports:{}};cache.set(path,loaded);
  const compiled=ts.transpileModule(readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText;
- const req=name=>name==='server-only' ? {} : name==='next/headers' ? {cookies:async()=>({get:key=>jar.has(key)?{value:jar.get(key)}:undefined,set:(k,v)=>jar.set(k,v),delete:k=>jar.delete(k)})} : name==='next/navigation' ? {redirect:()=>{throw Error('redirect');}} : name.startsWith('@/') ? load(name.slice(2)+'.ts') : name.startsWith('.') ? load(resolve(path,'..',name+'.ts')) : nativeRequire(name);
+ const req=name=>name==='server-only' ? {} : name==='next/headers' ? {cookies:async()=>({get:key=>jar.has(key)?{value:jar.get(key)}:undefined,set:(k,v)=>jar.set(k,v),delete:k=>jar.delete(k)})} : name==='next/navigation' ? {redirect:()=>{throw Error('redirect');}} : name==='@/lib/admin/db'||name==='./db' ? {db:()=>testDb} : name.endsWith('.mjs') ? nativeRequire(name.startsWith('@/')?resolve(name.slice(2)):resolve(path,'..',name)) : name.startsWith('@/') ? load(name.slice(2)+'.ts') : name.startsWith('.') ? load(resolve(path,'..',name+'.ts')) : nativeRequire(name);
  new Function('require','module','exports',compiled)(req,loaded,loaded.exports);return loaded.exports;
 }
-// Simulate an existing database with duplicate daily sales before initialization.
-const {DatabaseSync: SeedDatabase}=nativeRequire('node:sqlite');
-const seed=new SeedDatabase(process.env.ADMIN_DATABASE_PATH);
-seed.exec(`CREATE TABLE transactions (id TEXT PRIMARY KEY,type TEXT NOT NULL,amount INTEGER NOT NULL,category TEXT NOT NULL,description TEXT,transactionDate TEXT NOT NULL,createdAt TEXT NOT NULL,updatedAt TEXT NOT NULL);
-INSERT INTO transactions VALUES ('old-a','income',100,'sales',NULL,'2025-01-01','2025-01-01','2025-01-01'),('old-b','income',200,'sales',NULL,'2025-01-01','2025-01-01','2025-01-01');`);
-seed.close();
+// Import legacy duplicate daily sales through the actual PostgreSQL migration path.
+const snapshot=Object.fromEntries(Object.keys(tableColumns).map(table=>[table,[]]));
+snapshot.transactions=['old-a','old-b'].map((id,index)=>({id,type:'income',amount:100*(index+1),category:'sales',description:null,transactionDate:'2025-01-01',createdAt:'2025-01-01',updatedAt:'2025-01-01'}));
+await importSnapshot(postgres.raw,snapshot);
 const cash=load('lib/cashflow.ts');
 const dates=load('lib/business-date.ts');
 const auth=load('lib/admin/auth.ts');
@@ -81,8 +82,8 @@ test('server authentication, CRUD, date filtering, persistence and revocation',a
 
  assert.equal((await actions.saveTransaction(input)).error,null);
  assert.match((await actions.saveTransaction(input)).error,/Rekap/);
- const databaseGuard=load('lib/admin/db.ts').db();
- assert.throws(()=>databaseGuard.prepare('INSERT INTO transactions VALUES(?,?,?,?,?,?,?,?)').run('bypass','income',1,'sales',null,input.transactionDate,'now','now'),/daily_sales_duplicate/);
+ const databaseGuard=testDb;
+ await assert.rejects(databaseGuard.query('INSERT INTO transactions VALUES($1,$2,$3,$4,$5,$6,$7,$8)',['bypass','income',1,'sales',null,input.transactionDate,'now','now']),/Rekap/);
  assert.equal((await actions.saveTransaction({...input,category:'other_income'},'missing')).error,'Transaksi tidak ditemukan. Muat ulang halaman.');
  for(let i=0;i<2;i++)assert.equal((await actions.saveTransaction({...input,category:'other_income',transactionDate:'2025-02-01'})).error,null);
  const others=await actions.listTransactions('2025-02-01');
@@ -101,16 +102,15 @@ test('server authentication, CRUD, date filtering, persistence and revocation',a
  await actions.saveTransaction({...input,amount:200000},id);
  rows=await actions.listTransactions(input.transactionDate);
  assert.equal(cash.summarize(rows).difference,175000);
- // A separate SQLite connection sees committed records.
- const {DatabaseSync}=nativeRequire('node:sqlite');const independent=new DatabaseSync(process.env.ADMIN_DATABASE_PATH);
- assert.equal(independent.prepare('SELECT COUNT(*) AS count FROM transactions').get().count,2);independent.close();
+ // Verify committed PostgreSQL rows independently of the action return values.
+ assert.equal(Number((await postgres.raw.query('SELECT COUNT(*) AS count FROM transactions')).rows[0].count),2);
  assert.equal(rows.find(r=>r.type==='expense').description,'Beli kantong plastik');
  assert.ok((await actions.saveTransaction({...input,amount:0})).error);
  await actions.deleteTransaction(id);assert.equal((await actions.listTransactions(input.transactionDate)).length,1);
  // Old records with no description remain readable; edits require a detail.
- const database=load('lib/admin/db.ts').db();
+ const database=testDb;
  const timestamp=new Date().toISOString();
- database.prepare('INSERT INTO transactions VALUES(?,?,?,?,?,?,?,?)').run('legacy-expense','expense',35000,'operational',null,input.transactionDate,timestamp,timestamp);
+ await database.query('INSERT INTO transactions VALUES($1,$2,$3,$4,$5,$6,$7,$8)',['legacy-expense','expense',35000,'operational',null,input.transactionDate,timestamp,timestamp]);
  let legacy=(await actions.listTransactions(input.transactionDate)).find(r=>r.id==='legacy-expense');
  assert.equal(legacy.description,null);
  assert.match((await actions.saveTransaction(legacy,legacy.id)).error,/Detail pengeluaran wajib/);
@@ -118,8 +118,7 @@ test('server authentication, CRUD, date filtering, persistence and revocation',a
  assert.equal((await actions.saveTransaction({...legacy,description:'Beli lakban'},legacy.id)).error,null);
  legacy=(await actions.listTransactions(input.transactionDate)).find(r=>r.id==='legacy-expense');
  assert.equal(legacy.description,'Beli lakban');
- const check=new DatabaseSync(process.env.ADMIN_DATABASE_PATH);
- assert.equal(check.prepare('SELECT description FROM transactions WHERE id=?').get('legacy-expense').description,'Beli lakban');check.close();
+ assert.equal((await postgres.raw.query('SELECT description FROM transactions WHERE id=$1',['legacy-expense'])).rows[0].description,'Beli lakban');
  await actions.deleteTransaction(legacy.id);
  assert.equal((await actions.listTransactions(input.transactionDate)).length,1);
  // Reusable types, atomic batches, idempotency, linked CRUD and aggregate accuracy.
@@ -140,7 +139,7 @@ test('server authentication, CRUD, date filtering, persistence and revocation',a
  assert.ok((await actions.saveExpenseBatch({...batch,transactionDate:'2099-01-01'})).error);
  const failing={...batch,id:'test-batch-rollback-001',items:[batch.items[0],{typeId:'missing',amount:100}]};
  assert.ok((await actions.saveExpenseBatch(failing)).error);
- assert.equal(database.prepare('SELECT id FROM expense_batches WHERE id=?').get(failing.id),undefined);
+ assert.equal((await database.query('SELECT id FROM expense_batches WHERE id=$1',[failing.id])).rows[0],undefined);
  assert.equal((await actions.financialOverview(input.transactionDate,input.transactionDate)).totals.expense,before);
  assert.equal((await actions.saveExpenseBatch(batch)).error,null);
  assert.equal((await actions.saveExpenseBatch(batch)).error,null,'retry must not create duplicate entries');
@@ -164,12 +163,11 @@ test('server authentication, CRUD, date filtering, persistence and revocation',a
  const updated=(await actions.listTransactions(input.transactionDate)).find(row=>row.id===batchRows[0].id);
  assert.equal(updated.amount,100000);assert.equal(updated.expenseTypeName,'Belanja Pupuk');assert.equal(updated.batchId,batch.id);
  assert.ok((await actions.saveTransaction({...updated,description:'Overwrite'},updated.id)).error);
- const verify=new DatabaseSync(process.env.ADMIN_DATABASE_PATH);
- assert.equal(verify.prepare('SELECT COUNT(*) AS n FROM expense_types').get().n,6);verify.close();
+ assert.equal(Number((await postgres.raw.query('SELECT COUNT(*) AS n FROM expense_types')).rows[0].n),6);
  await actions.deleteTransaction(batchRows[1].id);
  batchRows=(await actions.listTransactions(input.transactionDate)).filter(row=>row.batchId===batch.id);
  assert.equal(batchRows.length,2);
- assert.equal(database.prepare('SELECT transactionId FROM expense_items WHERE transactionId=?').get(updated.id).transactionId,updated.id);
+ assert.equal((await database.query('SELECT "transactionId" FROM expense_items WHERE "transactionId"=$1',[updated.id])).rows[0].transactionId,updated.id);
  for(const row of batchRows)await actions.deleteTransaction(row.id);
  assert.equal((await actions.saveExpenseBatch(batch)).error,null,'deleted submission retains retry tombstone');
  assert.equal((await actions.listTransactions(input.transactionDate)).filter(row=>row.batchId===batch.id).length,0);
@@ -180,6 +178,7 @@ test('server authentication, CRUD, date filtering, persistence and revocation',a
  await auth.signOut();await assert.rejects(actions.listTransactions(input.transactionDate));
  for(let i=0;i<5;i++)await auth.signIn('incorrect');
  assert.match(await auth.signIn('test-long-password'),/15 menit/);
+ await postgres.close();
  rmSync(temp,{recursive:true,force:true});
 });
 

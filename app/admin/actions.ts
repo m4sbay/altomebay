@@ -1,114 +1,115 @@
 "use server";
-import { createHash, randomUUID } from "node:crypto";
-import { redirect } from "next/navigation";
-import { requireAdmin, signIn, signOut } from "@/lib/admin/auth";
-import { categories } from "@/lib/cashflow";
-import { expenseName, validateExpenseBatch, validateExpenseItem, type ExpenseType } from "@/lib/expenses";
-import { db } from "@/lib/admin/db";
-import { validDate, validatePeriod, summarize, cashflowTrend, validateTransaction, type CashTransaction } from "@/lib/cashflow";
-export async function login(_: string | null, form: FormData) {
- const error = await signIn(String(form.get("password") || ""));
- if (error) return error;
- redirect("/admin");
-}
-export async function logout() { await signOut(); redirect("/admin"); }
-export async function listTransactions(date: string): Promise<CashTransaction[]> {
- await requireAdmin();
- if (!validDate(date)) throw new Error("Tanggal tidak valid.");
- return db().prepare("SELECT t.*, i.typeId AS expenseTypeId, et.name AS expenseTypeName, i.batchId, b.note AS batchNote FROM transactions t LEFT JOIN expense_items i ON i.transactionId=t.id LEFT JOIN expense_types et ON et.id=i.typeId LEFT JOIN expense_batches b ON b.id=i.batchId WHERE t.transactionDate=? ORDER BY t.createdAt DESC,t.id DESC").all(date).map(row => ({ ...(row as CashTransaction) }));
-}
-export async function saveTransaction(input: unknown, id?: string) {
- await requireAdmin();
- let v;
- try { v=validateTransaction(input); } catch(e) {return {error:(e as Error).message};}
- const now = new Date().toISOString();
- try {
- if (id) {
-  if(typeof id !== 'string')return {error:'ID tidak valid.'};
-  if(db().prepare('SELECT transactionId FROM expense_items WHERE transactionId=?').get(id))return {error:'Gunakan editor item pengeluaran untuk transaksi ini.'};
-  const result = db().prepare("UPDATE transactions SET type=?,amount=?,category=?,description=?,transactionDate=?,updatedAt=? WHERE id=?").run(v.type,v.amount,v.category,v.description,v.transactionDate,now,id);
-  if (!result.changes) return {error:"Transaksi tidak ditemukan. Muat ulang halaman."};
- } else {
-  db().prepare("INSERT INTO transactions (id,type,amount,category,description,transactionDate,createdAt,updatedAt) VALUES(?,?,?,?,?,?,?,?)").run(randomUUID(),v.type,v.amount,v.category,v.description,v.transactionDate,now,now);
- }
- } catch(e) {
-  if(e instanceof Error && e.message.includes("daily_sales_duplicate")) return {error:"Rekap penjualan tanggal ini sudah ada. Buka rekap yang ada untuk mengedit nominalnya."};
-  throw e;
- }
- return {error:null};
-}
-export async function deleteTransaction(id: string) {
- await requireAdmin();
- if(typeof id !== "string" || !db().prepare("DELETE FROM transactions WHERE id=?").run(id).changes) throw new Error("Transaksi tidak ditemukan. Muat ulang halaman.");
-}
+import { createHash, randomUUID } from 'node:crypto';
+import { redirect } from 'next/navigation';
+import { requireAdmin, signIn, signOut } from '@/lib/admin/auth';
+import { db } from '@/lib/admin/db';
+import { DatabaseError } from '@/lib/admin/postgres.mjs';
+import { categories, validDate, validatePeriod, summarize, cashflowTrend, validateTransaction, type CashTransaction } from '@/lib/cashflow';
+import { expenseName, validateExpenseBatch, validateExpenseItem, type ExpenseType } from '@/lib/expenses';
 
-export async function financialOverview(start: string, end: string) {
+const historySelect=`SELECT t.*, i."typeId" AS "expenseTypeId", et.name AS "expenseTypeName", i."batchId", b.note AS "batchNote"
+ FROM transactions t LEFT JOIN expense_items i ON i."transactionId"=t.id
+ LEFT JOIN expense_types et ON et.id=i."typeId" LEFT JOIN expense_batches b ON b.id=i."batchId"`;
+export async function login(_:string|null,form:FormData) {
+ const error=await signIn(String(form.get('password')||''));
+ if(error)return error;
+ redirect('/admin');
+}
+export async function logout(){await signOut();redirect('/admin');}
+export async function listTransactions(date:string):Promise<CashTransaction[]> {
+ await requireAdmin();
+ if(!validDate(date))throw Error('Tanggal tidak valid.');
+ return (await db().query<CashTransaction>(`${historySelect} WHERE t."transactionDate"=$1 ORDER BY t."createdAt" DESC,t.id DESC`,[date])).rows;
+}
+export async function saveTransaction(input:unknown,id?:string) {
+ await requireAdmin();
+ let value;
+ try{value=validateTransaction(input);}catch(error){return {error:(error as Error).message};}
+ if(id!==undefined&&typeof id!=='string')return {error:'ID tidak valid.'};
+ const now=new Date().toISOString();
+ try {
+  await db().transaction(async client=>{
+   if(id){
+    const existing=await client.query('SELECT id FROM transactions WHERE id=$1 FOR UPDATE',[id]);
+    if(!existing.rows.length)throw new DatabaseError('Transaksi tidak ditemukan. Muat ulang halaman.');
+    if((await client.query('SELECT "transactionId" FROM expense_items WHERE "transactionId"=$1',[id])).rows.length)throw new DatabaseError('Gunakan editor item pengeluaran untuk transaksi ini.');
+    await client.query('UPDATE transactions SET type=$1,amount=$2,category=$3,description=$4,"transactionDate"=$5,"updatedAt"=$6 WHERE id=$7',[value.type,value.amount,value.category,value.description,value.transactionDate,now,id]);
+   }else {
+    await client.query('INSERT INTO transactions (id,type,amount,category,description,"transactionDate","createdAt","updatedAt") VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[randomUUID(),value.type,value.amount,value.category,value.description,value.transactionDate,now,now]);
+   }
+  });
+  return {error:null};
+ }catch(error){return {error:(error as Error).message};}
+}
+export async function deleteTransaction(id:string) {
+ await requireAdmin();
+ if(typeof id!=='string')throw Error('ID tidak valid.');
+ if(!(await db().query('DELETE FROM transactions WHERE id=$1 RETURNING id',[id])).rows.length)throw Error('Transaksi tidak ditemukan. Muat ulang halaman.');
+}
+export async function financialOverview(start:string,end:string) {
  await requireAdmin();
  const period=validatePeriod(start,end);
- const rows=db().prepare("SELECT t.*, i.typeId AS expenseTypeId, et.name AS expenseTypeName, i.batchId, b.note AS batchNote FROM transactions t LEFT JOIN expense_items i ON i.transactionId=t.id LEFT JOIN expense_types et ON et.id=i.typeId LEFT JOIN expense_batches b ON b.id=i.batchId WHERE t.transactionDate BETWEEN ? AND ? ORDER BY t.transactionDate DESC,t.createdAt DESC,t.id DESC").all(period.start,period.end).map(row=>({...row as CashTransaction}));
+ const rows=(await db().query<CashTransaction>(`${historySelect} WHERE t."transactionDate" BETWEEN $1 AND $2 ORDER BY t."transactionDate" DESC,t."createdAt" DESC,t.id DESC`,[period.start,period.end])).rows;
  return {rows,totals:summarize(rows),trend:cashflowTrend(rows,period)};
 }
-export async function dailySales(date: string): Promise<CashTransaction[]> {
+export async function dailySales(date:string):Promise<CashTransaction[]> {
  await requireAdmin();
- if(!validDate(date)) throw new Error("Tanggal tidak valid.");
- return db().prepare("SELECT * FROM transactions WHERE transactionDate=? AND type='income' AND category='sales' ORDER BY createdAt,id").all(date).map(row=>({...row as CashTransaction}));
+ if(!validDate(date))throw Error('Tanggal tidak valid.');
+ return (await db().query<CashTransaction>(`SELECT * FROM transactions WHERE "transactionDate"=$1 AND type='income' AND category='sales' ORDER BY "createdAt",id`,[date])).rows;
 }
-
-export async function listExpenseTypes(): Promise<ExpenseType[]> {
+export async function listExpenseTypes():Promise<ExpenseType[]> {
  await requireAdmin();
- return db().prepare('SELECT id,name,category FROM expense_types ORDER BY rowid').all().map(row=>({...row as ExpenseType}));
+ return (await db().query<ExpenseType>('SELECT id,name,category FROM expense_types ORDER BY sort_order,id')).rows;
 }
-export async function createExpenseType(name: unknown, category: unknown) {
+export async function createExpenseType(name:unknown,category:unknown) {
  await requireAdmin();
  try {
   const clean=expenseName(name);
   if(typeof category!=='string'||!Object.hasOwn(categories.expense,category))throw Error('Pilih kategori utama pengeluaran.');
   const key=clean.toLocaleLowerCase('id-ID');
-  db().prepare('INSERT OR IGNORE INTO expense_types VALUES(?,?,?,?)').run(randomUUID(),clean,key,category);
-  const type=db().prepare('SELECT id,name,category FROM expense_types WHERE normalizedName=?').get(key) as ExpenseType;
-  return {type:{...type},error:null};
- }catch(e){return {error:(e as Error).message};}
+  await db().query('INSERT INTO expense_types(id,name,"normalizedName",category) VALUES($1,$2,$3,$4) ON CONFLICT ("normalizedName") DO NOTHING',[randomUUID(),clean,key,category]);
+  const type=(await db().query<ExpenseType>('SELECT id,name,category FROM expense_types WHERE "normalizedName"=$1',[key])).rows[0];
+  return {type,error:null};
+ }catch(error){return {error:(error as Error).message};}
 }
-export async function saveExpenseBatch(input: unknown) {
+export async function saveExpenseBatch(input:unknown) {
  await requireAdmin();
- const database=db();
  try {
-  const v=validateExpenseBatch(input);
-  const fingerprint=createHash('sha256').update(JSON.stringify(v)).digest('hex');
-  database.exec('BEGIN IMMEDIATE');
-  try {
-   const existing=database.prepare('SELECT fingerprint FROM expense_batches WHERE id=?').get(v.id) as {fingerprint:string}|undefined;
-   if(existing){if(existing.fingerprint!==fingerprint)throw Error('Pencatatan ini sudah tersimpan dengan isian berbeda. Muat ulang riwayat.');}
-   else {
-    const now=new Date().toISOString();
-    database.prepare('INSERT INTO expense_batches VALUES(?,?,?,?,?)').run(v.id,v.note,v.transactionDate,fingerprint,now);
-    for(const item of v.items){
-     const type=database.prepare('SELECT id,name,category FROM expense_types WHERE id=?').get(item.typeId) as ExpenseType|undefined;
-     if(!type)throw Error('Jenis pengeluaran tidak ditemukan. Muat ulang pilihan.');
-     const id=randomUUID();
-     database.prepare('INSERT INTO transactions (id,type,amount,category,description,transactionDate,createdAt,updatedAt) VALUES(?,?,?,?,?,?,?,?)').run(id,'expense',item.amount,type.category,null,v.transactionDate,now,now);
-     database.prepare('INSERT INTO expense_items VALUES(?,?,?)').run(id,type.id,v.id);
-    }
+  const value=validateExpenseBatch(input);
+  const fingerprint=createHash('sha256').update(JSON.stringify(value)).digest('hex');
+  await db().transaction(async client=>{
+   const now=new Date().toISOString();
+   // A unique INSERT arbitrates concurrent/retried requests across serverless instances.
+   const inserted=await client.query('INSERT INTO expense_batches(id,note,"transactionDate",fingerprint,"createdAt") VALUES($1,$2,$3,$4,$5) ON CONFLICT (id) DO NOTHING RETURNING id',[value.id,value.note,value.transactionDate,fingerprint,now]);
+   if(!inserted.rows.length){
+    const existing=(await client.query<{fingerprint:string}>('SELECT fingerprint FROM expense_batches WHERE id=$1',[value.id])).rows[0];
+    if(existing?.fingerprint!==fingerprint)throw new DatabaseError('Pencatatan ini sudah tersimpan dengan isian berbeda. Muat ulang riwayat.');
+    return;
    }
-   database.exec('COMMIT');
-  }catch(e){database.exec('ROLLBACK');throw e;}
+   for(const item of value.items){
+    const type=(await client.query<ExpenseType>('SELECT id,name,category FROM expense_types WHERE id=$1 FOR KEY SHARE',[item.typeId])).rows[0];
+    if(!type)throw new DatabaseError('Jenis pengeluaran tidak ditemukan. Muat ulang pilihan.');
+    const id=randomUUID();
+    await client.query('INSERT INTO transactions(id,type,amount,category,description,"transactionDate","createdAt","updatedAt") VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[id,'expense',item.amount,type.category,null,value.transactionDate,now,now]);
+    await client.query('INSERT INTO expense_items("transactionId","typeId","batchId") VALUES($1,$2,$3)',[id,type.id,value.id]);
+   }
+  });
   return {error:null};
- }catch(e){return {error:(e as Error).message};}
+ }catch(error){return {error:(error as Error).message};}
 }
-export async function saveExpenseItem(id: string, typeId: string, amount: number) {
+export async function saveExpenseItem(id:string,typeId:string,amount:number) {
  await requireAdmin();
  try {
   validateExpenseItem(typeId,amount);
   if(typeof id!=='string')throw Error('ID tidak valid.');
-  const database=db();
-  database.exec('BEGIN IMMEDIATE');
-  try {
-  const result=database.prepare(`UPDATE transactions SET amount=?,category=(SELECT category FROM expense_types WHERE id=?),updatedAt=?
-   WHERE id=? AND type='expense' AND EXISTS(SELECT 1 FROM expense_items WHERE transactionId=? AND EXISTS(SELECT 1 FROM expense_types WHERE id=?))`).run(amount,typeId,new Date().toISOString(),id,id,typeId);
-  if(!result.changes)throw Error('Item atau jenis tidak ditemukan. Muat ulang halaman.');
-  database.prepare('UPDATE expense_items SET typeId=? WHERE transactionId=?').run(typeId,id);
-  database.exec('COMMIT');
-  }catch(e){database.exec('ROLLBACK');throw e;}
+  await db().transaction(async client=>{
+   const existing=await client.query(`SELECT id FROM transactions WHERE id=$1 AND type='expense' FOR UPDATE`,[id]);
+   const link=await client.query('SELECT "transactionId" FROM expense_items WHERE "transactionId"=$1',[id]);
+   const type=(await client.query<ExpenseType>('SELECT id,name,category FROM expense_types WHERE id=$1 FOR KEY SHARE',[typeId])).rows[0];
+   if(!existing.rows.length||!link.rows.length||!type)throw new DatabaseError('Item atau jenis tidak ditemukan. Muat ulang halaman.');
+   await client.query('UPDATE transactions SET amount=$1,category=$2,"updatedAt"=$3 WHERE id=$4',[amount,type.category,new Date().toISOString(),id]);
+   await client.query('UPDATE expense_items SET "typeId"=$1 WHERE "transactionId"=$2',[typeId,id]);
+  });
   return {error:null};
- }catch(e){return {error:(e as Error).message};}
+ }catch(error){return {error:(error as Error).message};}
 }

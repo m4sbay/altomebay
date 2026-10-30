@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { LenisProvider } from "@/components/providers/LenisProvider";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -23,15 +24,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={`${plusJakartaSans.variable} antialiased`}>
+    <html lang="id" className={`${plusJakartaSans.variable} antialiased`} suppressHydrationWarning>
       <body className="min-h-screen bg-base text-ink">
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:rounded-full focus:bg-brand focus:px-6 focus:py-3 focus:text-white focus:shadow-soft-hover"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:rounded-full focus:bg-brand-solid focus:px-6 focus:py-3 focus:text-white focus:shadow-soft-hover"
         >
           Lewati ke konten utama
         </a>
-        <LenisProvider>{children}</LenisProvider>
+        <ThemeProvider><LenisProvider>{children}</LenisProvider></ThemeProvider>
       </body>
     </html>
   );

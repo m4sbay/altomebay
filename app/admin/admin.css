@@ -28,7 +28,7 @@
 .admin-login { @apply max-w-lg mx-auto mt-10; }
 .admin-notice { @apply rounded-control bg-brand-soft text-brand p-4 text-sm; }
 .admin-dialog { @apply fixed m-auto border border-border rounded-card p-[var(--card-padding)] bg-base text-ink shadow-soft-hover; width:min(32rem,calc(100% - 2rem)); max-height:calc(100dvh - 2rem); overflow-y:auto; }
-.admin-dialog::backdrop { background:color-mix(in srgb,var(--color-ink) 45%,transparent); }
+.admin-dialog::backdrop { background:var(--dialog-backdrop); }
 .admin-form { @apply grid gap-5 mt-6; }
 .admin-shell label,.admin-dialog label { @apply text-sm font-semibold; }
 .admin-form label { @apply block; }
@@ -78,7 +78,7 @@
 .admin-calendar .rdp-today:not(.rdp-selected) .rdp-day_button { @apply text-brand underline underline-offset-4; }
 .admin-calendar .rdp-outside:not(.rdp-selected) { @apply text-ink-soft; }
 .admin-calendar .rdp-selected .rdp-day_button,
-.admin-calendar .rdp-selected .rdp-day_button:hover { @apply bg-brand text-on-brand; }
+.admin-calendar .rdp-selected .rdp-day_button:hover { @apply bg-brand-solid text-on-brand; }
 .admin-calendar button:disabled,
 .admin-calendar button[aria-disabled=true] { @apply opacity-40 cursor-not-allowed; }
 .admin-calendar button:focus-visible {
@@ -88,7 +88,7 @@
   text-underline-offset:.25rem;
   background-color:var(--color-brand-soft);
 }
-.admin-calendar .rdp-selected .rdp-day_button:focus-visible { @apply border-ink bg-brand text-on-brand; }
+.admin-calendar .rdp-selected .rdp-day_button:focus-visible { @apply border-ink bg-brand-solid text-on-brand; }
 .admin-calendar-note { @apply text-xs text-ink-soft text-center mt-3 pt-3 border-t border-border; }
 @media(prefers-reduced-motion:reduce) {
   .admin-calendar .rdp-day_button { transition:none; }

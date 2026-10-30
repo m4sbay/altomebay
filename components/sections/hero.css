@@ -4,7 +4,7 @@
 
 .hero.hero-centered {
   @apply relative isolate;
-  background: linear-gradient(180deg, var(--color-brand-muted) 0%, var(--color-brand-soft) 48%, var(--color-base) 100%);
+  background: var(--hero-background);
   @apply overflow-hidden;
   --hero-card-width: clamp(16rem, 26vw, 22.5rem);
   --hero-gallery-gap: var(--grid-gap);

@@ -3,7 +3,12 @@ export const storeConfig = {
   name: "Ruko Altomebay Serasah",
   tagline: "Kebutuhan harian, dekat di hati.",
   whatsapp: { number: "6281273474170", displayNumber: "081273474170", defaultMessage: "Halo, saya mau tanya tentang produk yang tersedia di toko." },
-  address: { full: "8CH7+73M, Serasah, Kec. Pemayung, Kabupaten Batang Hari, Jambi 36657", mapsUrl: "https://www.google.com/maps/search/?api=1&query=8CH7%2B73M%2C%20Serasah%2C%20Pemayung%2C%20Batang%20Hari%2C%20Jambi" },
+  address: {
+    full: "Ruko Altomebay, Serasah, Kec. Pemayung, Kabupaten Batang Hari, Jambi 36657",
+    mapsUrl: "https://maps.app.goo.gl/ww2V2cmzXPmcp3Ku8?g_st=ic",
+    // Official Google Share embed supplied by the owner; preserve its place identity.
+    mapsEmbedUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3988.1184758056647!2d103.41020147570069!3d-1.6725576361717935!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e2f7bf799ade3a5%3A0xa9d91f687fe0af53!2sRuko%20Altomebay%20Serasah!5e0!3m2!1sid!2sid!4v1793385563140!5m2!1sid!2sid",
+  },
   hours: null as string | null,
   social: { instagram: null as string | null },
 };

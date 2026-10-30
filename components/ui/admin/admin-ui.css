@@ -36,8 +36,8 @@
 .app-empty-options { @apply p-3 text-sm text-ink-soft; }
 .admin-type-filter .app-control { @apply mt-0 w-auto; min-width:10rem; }
 .admin-shell [role=alert],.admin-dialog [role=alert] { @apply text-sm text-brand; }
-.admin-shell .action-destructive,.admin-dialog .action-destructive { @apply bg-brand text-on-brand; }
-.admin-shell .action-destructive:hover:not(:disabled),.admin-dialog .action-destructive:hover:not(:disabled) { @apply bg-brand-hover; }
+.admin-shell .action-destructive,.admin-dialog .action-destructive { @apply bg-brand-solid text-on-brand; }
+.admin-shell .action-destructive:hover:not(:disabled),.admin-dialog .action-destructive:hover:not(:disabled) { @apply bg-brand-solid-hover; }
 @media(prefers-reduced-motion:reduce) { .app-control { transition:none; } }
 .app-control.admin-date-trigger { @apply flex; }
 .app-popup.admin-calendar-popover { @apply p-3; }

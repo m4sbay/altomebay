@@ -4,12 +4,17 @@
 
 @import "./design-tokens.css";
 
+@import "./theme.css";
+
 @theme {
   --color-base: #ffffff;
   --color-base-soft: #f9fafb;
   --color-ink: #1f2937;
   --color-ink-soft: #4b5563;
   --color-brand: #c62f2b;
+  --color-brand-solid: #c62f2b;
+  --color-brand-solid-hover: #aa2421;
+  --color-elevated: #ffffff;
   --color-brand-hover: #aa2421;
   --color-brand-accent: #e9453f;
   --color-brand-soft: #fff1f0;
@@ -445,6 +450,11 @@ svg {
   @apply [grid-template-columns:1fr_1fr] gap-20;
 }
 
+.store-map-preview {
+  aspect-ratio: 4 / 3;
+  min-height: 18.125rem;
+}
+
 .location-details {
   @apply grid gap-5 [margin:calc(var(--spacing)_*_8)_0] text-ink-soft;
 }
@@ -624,7 +634,7 @@ svg {
   }
   .mobile-cta {
     @apply grid [grid-template-columns:1.1fr_1fr] fixed bottom-0 left-0 right-0 [z-index:70] gap-2 [padding:calc(var(--spacing)_*_3)_calc(var(--spacing)_*_5)_calc(calc(var(--spacing)_*_3)_+_env(safe-area-inset-bottom))];
-    background: #ffffffed;
+    background: var(--mobile-cta-surface);
     @apply [backdrop-filter:blur(12px)] [border-top:1px_solid_var(--color-border)];
   }
   .mobile-cta .action {
@@ -977,12 +987,12 @@ h2 em,.hero h1 em,.eyebrow,.text-link,.nav-contact,.wordmark,
 }
 
 .action-primary,.action-whatsapp {
-  background: var(--color-brand);
+  background: var(--color-brand-solid);
   @apply text-on-brand;
 }
 
 .action-primary:hover:not(:disabled),.action-whatsapp:hover:not(:disabled) {
-  background: var(--color-brand-hover);
+  background: var(--color-brand-solid-hover);
 }
 
 .action-secondary:hover:not(:disabled),.nav-contact:hover {
@@ -1186,11 +1196,11 @@ a:focus-visible,button:focus-visible {
 .action-primary,.action-whatsapp {
   background: var(--control-primary-surface);
   /* Keep an opaque surface when the gradient switches off on hover. */
-  @apply bg-brand-hover;
+  @apply bg-brand-solid;
 }
 
 .action-primary:hover:not(:disabled),.action-whatsapp:hover:not(:disabled) {
-  background: var(--color-brand-hover);
+  background: var(--color-brand-solid-hover);
 }
 
 .action-secondary,.nav-contact {

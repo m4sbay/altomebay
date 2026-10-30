@@ -1,0 +1,102 @@
+/* Theme values extend the existing semantic palette; light values stay intact. */
+:root {
+  color-scheme: light;
+  --header-surface: #fffffff2;
+  --mobile-cta-surface: #ffffffed;
+  --hero-background: linear-gradient(180deg, var(--color-brand-muted) 0%, var(--color-brand-soft) 48%, var(--color-base) 100%);
+  --promotion-surface: var(--color-brand-deep);
+  --dialog-backdrop: color-mix(in srgb, var(--color-ink) 45%, transparent);
+  --control-border: var(--color-border);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-base: #1f1f20;
+  --color-base-soft: #272729;
+  --color-elevated: #303033;
+  --color-ink: #f5f5f5;
+  --color-ink-soft: #a8a8ad;
+  --color-border: #3a3a3d;
+  --color-disabled: #3a3a3d;
+  /* Red foregrounds need a lighter shade; filled actions keep the brand red. */
+  --color-brand: #ff8b84;
+  --color-brand-hover: #ffaaa4;
+  --color-brand-soft: #342625;
+  --color-brand-muted: #6d4542;
+  --color-amber: #e1bd7b;
+  --color-shadow: transparent;
+  --shadow-soft: none;
+  --shadow-soft-hover: none;
+  --control-shadow: none;
+  --control-primary-surface: var(--color-brand-solid);
+  --header-surface: #1f1f20f2;
+  --mobile-cta-surface: #1f1f20ed;
+  --hero-background: var(--color-base);
+  --promotion-surface: var(--color-base-soft);
+  --dialog-backdrop: rgb(15 15 16 / .65);
+  --control-border: #838389;
+}
+
+.theme-toggle {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  color: var(--color-ink-soft);
+  background: transparent;
+  transition: background-color 240ms ease, color 240ms ease, transform 240ms ease;
+}
+
+.theme-toggle:hover {
+  color: var(--color-ink);
+  background: color-mix(in srgb, var(--color-ink) 6%, transparent);
+}
+
+.theme-toggle:active { transform: scale(.94); }
+.theme-toggle:focus-visible { outline: 3px solid var(--color-brand); outline-offset: 3px; }
+.theme-icon {
+  grid-area: 1 / 1;
+  pointer-events: none;
+  transition: transform 250ms cubic-bezier(.2,.7,.2,1), opacity 250ms ease;
+}
+.theme-icon-sun { opacity: 1; transform: rotate(0) scale(1); }
+.theme-icon-moon { opacity: 0; transform: rotate(-30deg) scale(.6); }
+[data-theme="dark"] .theme-icon-sun { opacity: 0; transform: rotate(30deg) scale(.6); }
+[data-theme="dark"] .theme-icon-moon { opacity: 1; transform: rotate(0) scale(1); }
+
+/* Theme transitions are enabled only for a manual change, never on first paint.
+   Avoid a universal selector and leave artwork/scrolling animations untouched. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-theme-transition] :where(body, .site-header, .site-footer, .mobile-menu, .mobile-cta,
+    section, article, .hero-gallery-card, .hero-gallery-caption, .category-art,
+    .admin-shell, .admin-header, .admin-panel, .admin-dialog, .app-popup,
+    .app-control, .app-option, .action, a, h1, h2, h3, p, .theme-toggle) {
+    transition: color 250ms ease, background-color 250ms ease, border-color 250ms ease,
+      outline-color 250ms ease, transform 250ms ease;
+  }
+}
+
+[data-theme="dark"] :is(.service-card, .hero-gallery-card, .admin-panel, .admin-header) {
+  background-color: var(--color-base-soft);
+}
+[data-theme="dark"] :is(.admin-dialog, .app-popup, .app-control) {
+  background-color: var(--color-elevated);
+}
+[data-theme="dark"] .app-control { border-color: var(--control-border); }
+[data-theme="dark"] .app-control:hover:not(:disabled):not(:focus) { border-color: var(--color-ink-soft); }
+[data-theme="dark"] .app-control:is(:focus, [data-state="open"], [aria-invalid="true"]) { border-color: var(--color-brand); }
+[data-theme="dark"] .mobile-menu { background: var(--color-base-soft); }
+[data-theme="dark"] .promo-ticket { color: var(--color-ink); box-shadow: none; }
+[data-theme="dark"] .map-label { background: var(--color-base); }
+[data-theme="dark"] .menu-toggle { color: var(--color-ink); }
+
+@media (max-width: 899px) {
+  .nav-actions { margin-left: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle, .theme-icon { transition: none; }
+}
